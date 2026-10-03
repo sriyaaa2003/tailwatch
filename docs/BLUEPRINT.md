@@ -26,7 +26,11 @@ flowchart LR
 ## 3. Decisions (ADRs)
 | # | Decision | Alternatives | Why |
 |---|---|---|---|
-| 1 | Synthetic digital twin | Real datasets (Lumos5G, Irish 4G/5G); public traces | Reproducible, no licence risk, lets whole districts be held out, 1 s resolution. Cost: results are about the generator. Loader for real data is future work (REQUIRES USER DECISION on dataset). |
+| 1 | Synthetic digital twin as the controlled benchmark | Real data only | Reproducible, no licence risk, lets whole districts be held out and has many cells. Cost: results are about the generator, hence ADR 11 to 14. |
+| 11 | msData (Open RAN 5G testbed) as the real-data check | Lumos5G, Beyond Throughput (licence not clear), Telecom Italia (10 min resolution), COOPER (synthetic) | The only open set found with sub-second RAN records and a permissive licence (MIT on the dataset card, CC BY 4.0 in the paper; attribution given). Limits: one cell, at most 4 UEs, testbed traffic including attack classes. Downloaded by a verified script, never committed. |
+| 12 | Cell load = sum of all UEs' downlink rate per 1 s bin, streams split on silences over 3 s | Per-UE series; per-record 100 ms bins | The question is about the cell, not a UE; per-record spacing is irregular (median 97 ms), so a regular 1 s grid is needed for windows. A UE with no record in a bin is read as no traffic (assumption, stated). |
+| 13 | "High-load burst" at a configured 10 Mbit/s, not "congestion" | Percentile of the data; estimated capacity from MCS | The cell's capacity is not observed. A fixed, documented level keeps the label independent of any held-out group; the README never calls it verified congestion. |
+| 14 | Mobility pattern is the held-out group; validation = every 4th stream; traffic label is never a model input | Hold out traffic class; time-based validation | One cell has no geography, mobility is the available environment axis. Patterns were recorded in time blocks, so time validation would confound pattern and date. A deployed forecaster would not know the traffic label. |
 | 2 | Heavy-tailed ON/OFF sources | Poisson, MMPP, fractional Gaussian noise | Known mechanism for self-similar traffic, with a theory value to validate against. |
 | 3 | Leave-one-district-out + temporal purge | Random split, k-fold | Random rows leak through autocorrelation; geography is the generalisation axis the project is about. |
 | 4 | HistGradientBoosting | LightGBM, XGBoost, deep nets | Already in scikit-learn, no extra native dependency, fast enough; tabular features. |

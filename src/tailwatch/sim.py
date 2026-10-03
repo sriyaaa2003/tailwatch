@@ -149,7 +149,7 @@ def simulate(cfg: Config, sim: Sim | None = None, cells: list[int] | None = None
         frames.append(pl.DataFrame({
             "cell_id": np.full(n, cid, dtype=np.int32),
             "t": t.astype(np.int32),
-            "district": np.full(n, layout.district_of_cell[cid]),
+            "group": np.full(n, layout.district_of_cell[cid]),
             "row": np.full(n, row, dtype=np.int16),
             "col": np.full(n, col, dtype=np.int16),
             "users": on_total.astype(np.float32),

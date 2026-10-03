@@ -64,7 +64,7 @@ def build_features(raw: pl.DataFrame, cfg: Config) -> pl.DataFrame:
         ]
     # forward window (t, t+H]: reverse -> rolling_max -> reverse gives max over [t, t+H-1]; shift(-1) moves it to (t, t+H]
     fut = pl.col("util").reverse().rolling_max(H).reverse().shift(-1).over("cell_id").alias("y_fut_max")
-    out = df.select("cell_id", "t", "district", "row", "col", *exprs, "nbr_util_mean", "nbr_util_max", fut)
+    out = df.select("cell_id", "t", "group", "row", "col", *exprs, "nbr_util_mean", "nbr_util_max", fut)
     for w in cfg.features.windows_s:
         out = out.with_columns((pl.col(f"util_std_{w}") / (pl.col(f"util_mean_{w}").abs() + 1e-6)).alias(f"util_cv_{w}"))
     out = out.with_columns(((pl.col("y_fut_max") >= thr).cast(pl.Int8)).alias("y"))
@@ -73,4 +73,4 @@ def build_features(raw: pl.DataFrame, cfg: Config) -> pl.DataFrame:
     out = (out.filter((pl.col("t") % cfg.features.stride_s == 0) & (pl.col("util_now") < thr))
            .drop_nulls(cols + ["y_fut_max"])
            .with_columns(pl.col(cols).cast(pl.Float32)))
-    return out.select(["cell_id", "t", "district", "row", "col", *cols, "y_fut_max", "y"])
+    return out.select(["cell_id", "t", "group", "row", "col", *cols, "y_fut_max", "y"])

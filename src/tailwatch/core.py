@@ -14,7 +14,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, brier_score_loss, f1_score, log_loss
 
 from .config import Config
-from .features import feature_names
 
 EPS = 1e-6
 VARIANTS = ("raw", "sigmoid", "isotonic")
@@ -29,16 +28,34 @@ class Fold:
     test: np.ndarray
 
 
+META_COLS = {"cell_id", "t", "group", "row", "col", "top_label", "y_fut_max", "y"}
+
+
+def feature_cols(df: pl.DataFrame) -> list[str]:
+    """Model inputs = every column that is not identity/label metadata, in frame order."""
+    return [c for c in df.columns if c not in META_COLS]
+
+
 def lodo_folds(df: pl.DataFrame, cfg: Config) -> list[Fold]:
-    """Leave-one-district-out. Inside the training districts the last `val_fraction` of time is held out as the
-    validation set (threshold + calibration), separated from training by a purge gap so window overlap cannot leak."""
+    """Leave-one-group-out (a group is a district of the twin, or a mobility pattern of the real trace).
+
+    Inside the training groups the validation set (threshold + calibration) is either the last `val_fraction` of time,
+    separated from training by a purge gap so window overlap cannot leak (val_mode "time"), or every k-th stream,
+    k = 1/val_fraction (val_mode "stream"; streams are separate recordings, so no window crosses the boundary)."""
     t = df["t"].to_numpy()
-    dist = df["district"].to_numpy()
-    t_split = cfg.sim.duration_s * (1.0 - cfg.model.val_fraction)
+    grp = df["group"].to_numpy()
     folds = []
-    for name in sorted({d.name for d in cfg.city.districts}):
-        other = dist != name
-        folds.append(Fold(name, other & (t < t_split - cfg.model.purge_s), other & (t >= t_split), dist == name))
+    if cfg.model.val_mode == "time":
+        t_split = cfg.sim.duration_s * (1.0 - cfg.model.val_fraction)
+    else:
+        k = max(2, round(1.0 / cfg.model.val_fraction))
+        in_val = df["cell_id"].to_numpy() % k == 0
+    for name in sorted(set(grp.tolist())):
+        other = grp != name
+        if cfg.model.val_mode == "time":
+            folds.append(Fold(name, other & (t < t_split - cfg.model.purge_s), other & (t >= t_split), grp == name))
+        else:
+            folds.append(Fold(name, other & ~in_val, other & in_val, grp == name))
     return folds
 
 
@@ -182,7 +199,7 @@ def metrics_with_ci(y: np.ndarray, p: np.ndarray, thr, groups: np.ndarray, cfg: 
 
 
 def xy(df: pl.DataFrame, cfg: Config, cols: list[str] | None = None) -> tuple[np.ndarray, np.ndarray]:
-    cols = cols or feature_names(cfg)
+    cols = cols or feature_cols(df)
     return df.select(cols).to_numpy().astype(np.float32), df["y"].to_numpy().astype(np.int8)
 
 

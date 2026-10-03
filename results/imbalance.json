@@ -22,7 +22,7 @@
       "residential": 0.1103036187601208,
       "transit": 0.48078656224927785
     },
-    "fit_seconds_mean": 1.6861971999751404,
+    "fit_seconds_mean": 1.5381900499924086,
     "train_prevalence_mean": 0.06951744530897763
   },
   {
@@ -48,7 +48,7 @@
       "residential": 0.1175224023459598,
       "transit": 0.4733218481399139
     },
-    "fit_seconds_mean": 1.1457475500064902,
+    "fit_seconds_mean": 1.1560512999421917,
     "train_prevalence_mean": 0.06951744530897763
   },
   {
@@ -74,7 +74,7 @@
       "residential": 0.09666451230832541,
       "transit": 0.44919104709681823
     },
-    "fit_seconds_mean": 1.3902776750037447,
+    "fit_seconds_mean": 1.4167522999923676,
     "train_prevalence_mean": 0.06951744530897763
   },
   {
@@ -100,7 +100,7 @@
       "residential": 0.11720975535771234,
       "transit": 0.48438578097528234
     },
-    "fit_seconds_mean": 0.6609061749768443,
+    "fit_seconds_mean": 0.6695073750452138,
     "train_prevalence_mean": 0.06951744530897763
   }
 ]

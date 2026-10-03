@@ -11,8 +11,7 @@ import polars as pl
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 from .config import Config
-from .core import block_bootstrap, groups_for_bootstrap, lodo_folds
-from .features import feature_names
+from .core import block_bootstrap, feature_cols, groups_for_bootstrap, lodo_folds
 
 
 def conformal_margin(lo: np.ndarray, hi: np.ndarray, y: np.ndarray, alpha: float) -> float:
@@ -33,7 +32,7 @@ def _qreg(cfg: Config, q: float) -> HistGradientBoostingRegressor:
 
 def run(df: pl.DataFrame, cfg: Config) -> dict:
     a = cfg.probabilistic.alpha
-    cols = feature_names(cfg)
+    cols = feature_cols(df)
     thr = cfg.storm.utilisation_threshold
     folds = lodo_folds(df, cfg)
     groups = groups_for_bootstrap(df, cfg)

@@ -9,49 +9,90 @@ def ci(r: dict, key: str, nd: int = 3) -> str:
     return f"{r[key]:.{nd}f} [{r[key + '_lo']:.{nd}f}, {r[key + '_hi']:.{nd}f}]"
 
 
-def write(cfg: Config) -> str:
-    ds, hu = load_json(cfg, "data_summary.json"), load_json(cfg, "hurst.json")
-    imb, cal = load_json(cfg, "imbalance.json"), load_json(cfg, "calibration.json")["table"]
-    pol, gen = load_json(cfg, "policy.json"), load_json(cfg, "generalization.json")
-    prob, sel = load_json(cfg, "probabilistic.json"), load_json(cfg, "selection.json")
-    L: list[str] = []
-    a = L.append
-
+def _data_section(cfg: Config, ds: dict, a) -> None:
+    if cfg.report.kind == "real":
+        _data_real(cfg, ds, a)
+        return
+    hu = load_json(cfg, "hurst.json")
     a("## Data (synthetic digital twin)\n")
     a(f"{ds['raw_rows']:,} one-second cell observations -> {ds['feature_rows']:,} decision points (stride {cfg.features.stride_s} s, "
       f"already-congested rows removed). Storm = congestion (utilisation >= {cfg.storm.utilisation_threshold}) begins within "
       f"{cfg.storm.horizon_s} s. **Storm rate {100 * ds['storm_rate']:.1f}%** ({ds['storm_count']:,} events).\n")
     a("| district | decision points | storm rate |\n|---|---|---|")
-    for d in ds["by_district"]:
-        a(f"| {d['district']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
+    for d in ds["by_group"]:
+        a(f"| {d['group']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
     a("\nGenerator check (aggregated-variance Hurst exponent on load with surges and diurnal cycle switched off; "
       f"iid-noise reference H = {hu['H_iid_reference']:.2f}):\n")
     a("| cell | district | H measured | H theory (3-alpha_min)/2 |\n|---|---|---|---|")
     for r in hu["cells"]:
         a(f"| {r['cell_id']} | {r['district']} | {r['H_measured']:.2f} | {r['H_theory']:.2f} |")
 
-    a("\n## 1. Imbalance strategies (unseen districts, raw scores)\n")
+
+
+def _data_real(cfg: Config, ds: dict, a) -> None:
+    r = cfg.real
+    cad = ds["record_cadence"]
+    a("## Data (msData real trace, Open RAN 5G testbed)\n")
+    a(f"{ds['raw_rows']:,} per-UE records (median spacing {cad['median_ms']:.0f} ms, 5th-95th percentile {cad['p05_ms']:.0f}-{cad['p95_ms']:.0f} ms; "
+      f"not 1 ms samples) -> cell-level load in {r.bin_s:g} s bins (sum of all UEs' downlink rate), {ds['streams']} contiguous streams "
+      f"(silences over {r.max_gap_s:g} s split a stream, streams under {r.min_stream_s} s dropped), {ds['stream_seconds'] / 3600:.1f} h of cell time, "
+      f"{ds['feature_rows']:,} decision points. **High-load burst** = cell load reaches {r.storm_mbps:g} Mbit/s within {r.horizon_s} s "
+      f"(a configured level, about the 99.3rd percentile of 1 s load; the cell's capacity is not observed, so this is not verified congestion). "
+      f"**Burst rate {100 * ds['storm_rate']:.1f}%** ({ds['storm_count']:,} events).\n")
+    a("| mobility pattern | streams | decision points | burst rate |\n|---|---|---|---|")
+    for d in ds["by_group"]:
+        a(f"| {d['group']} | {d['streams']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
+    a("\nDescriptive only (the traffic label is never a model input): burst rate by the traffic class of the heaviest UE in the bin.\n")
+    a("| heaviest UE's traffic | decision points | burst rate |\n|---|---|---|")
+    for d in ds["by_top_label"]:
+        a(f"| {d['top_label']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
+    b = load_json(cfg, "burstiness.json")
+    a("\n### Is the twin's traffic shaped like the real trace?\n")
+    a(f"Same estimator and series length for all rows ({b['chunk_len_s']:.0f} s; real streams of at least {b['min_stream_s']} s). "
+      f"Median [IQR]; iid-noise Hurst reference {b['iid_reference_H']:.2f}.\n")
+    a("| series | n | Hurst H | CV (std/mean) | autocorr lag 1 s | autocorr lag 10 s |\n|---|---|---|---|---|---|")
+    rows = [("real trace", b["real"]), ("twin as published (45-70 sources/cell)", b["twin"]),
+            (f"twin with {b['twin_few_sources']['sources_per_cell']} sources/cell", b["twin_few_sources"])]
+    for name, v in rows:
+        f = lambda k: f"{v[k]['median']:.2f} [{v[k]['q25']:.2f}, {v[k]['q75']:.2f}]"
+        a(f"| {name} | {v['n']} | {f('H')} | {f('cv')} | {f('acf1')} | {f('acf10')} |")
+    a("\nReal Hurst by mobility pattern (median, n streams): " + ", ".join(
+        f"{g} {v['H']['median']:.2f} (n={v['n']})" for g, v in b["real_by_group"].items()) + ".")
+
+
+def write(cfg: Config) -> str:
+    ds = load_json(cfg, "data_summary.json")
+    u, ev = cfg.report.group_label, cfg.report.event_label
+    imb, cal = load_json(cfg, "imbalance.json"), load_json(cfg, "calibration.json")["table"]
+    pol, gen = load_json(cfg, "policy.json"), load_json(cfg, "generalization.json")
+    prob, sel = load_json(cfg, "probabilistic.json"), load_json(cfg, "selection.json")
+    L: list[str] = []
+    a = L.append
+
+    _data_section(cfg, ds, a)
+
+    a(f"\n## 1. Imbalance strategies (unseen {u}s, raw scores)\n")
     a("| strategy | PR-AUC [95% CI] | macro-F1 [95% CI] | Brier | mean predicted p (true rate "
       f"{imb[0]['prevalence']:.3f}) | train fit s |\n|---|---|---|---|---|---|")
     for r in imb:
         a(f"| {r['strategy']} | {ci(r, 'pr_auc')} | {ci(r, 'macro_f1')} | {r['brier']:.4f} | {r['mean_p']:.3f} | {r['fit_seconds_mean']:.1f} |")
 
-    a("\n## 2. Calibration (unseen districts)\n")
+    a(f"\n## 2. Calibration (unseen {u}s)\n")
     a("| strategy | calibration | Brier [95% CI] | ECE [95% CI] | PR-AUC |\n|---|---|---|---|---|")
     for r in cal:
         a(f"| {r['strategy']} | {r['variant']} | {ci(r, 'brier', 4)} | {ci(r, 'ece', 4)} | {r['pr_auc']:.3f} |")
 
     pf = load_json(cfg, "per_fold.json")
-    a(f"\nPR-AUC inside each held-out district ({cfg.model.default_strategy}). A monotone calibrator (sigmoid) cannot change it; "
-      "isotonic can, through tied scores. Pooled PR-AUC above mixes districts, so it also depends on the per-district calibration maps.\n")
-    a("| held-out district | storm rate | raw | sigmoid | isotonic |\n|---|---|---|---|---|")
+    a(f"\nPR-AUC inside each held-out {u} ({cfg.model.default_strategy}). A monotone calibrator (sigmoid) cannot change it; "
+      f"isotonic can, through tied scores. Pooled PR-AUC above mixes {u}s, so it also depends on the per-{u} calibration maps.\n")
+    a(f"| held-out {u} | {ev} rate | raw | sigmoid | isotonic |\n|---|---|---|---|---|")
     for k, v in pf.items():
         strat, district = k.split("|")
         if strat == cfg.model.default_strategy:
             a(f"| {district} | {100 * v['prevalence']:.1f}% | {v['raw']:.3f} | {v['sigmoid']:.3f} | {v['isotonic']:.3f} |")
 
     a("\n## 3. Alert policy: what does calibration buy?\n")
-    a(f"Costs: missed storm = {pol['c_miss']:g}, false alarm = {pol['c_fa']:g}, so the Bayes threshold for a calibrated "
+    a(f"Costs: missed {ev} = {pol['c_miss']:g}, false alarm = {pol['c_fa']:g}, so the Bayes threshold for a calibrated "
       f"probability is {pol['bayes_threshold']:.3f}. Cost per 1000 decisions (lower is better); never alert = "
       f"{pol['never_alert_cost']:.0f}, always alert = {pol['always_alert_cost']:.0f}.\n")
     a("| strategy | calibration | cost at Bayes threshold [95% CI] | cost at validation-tuned threshold |\n|---|---|---|---|")
@@ -59,23 +100,23 @@ def write(cfg: Config) -> str:
         a(f"| {r['strategy']} | {r['variant']} | {r['cost_bayes']:.0f} [{r['cost_bayes_lo']:.0f}, {r['cost_bayes_hi']:.0f}] | {r['cost_tuned']:.0f} |")
 
     a("\n## 4. Does the evaluation protocol flatter the model?\n")
-    a(f"Same model ({cfg.model.default_strategy}, isotonic-calibrated), four splits. PR-AUC is only comparable across rows "
-      "with similar storm prevalence, so prevalence is shown.\n")
-    a("| protocol | PR-AUC [95% CI] | macro-F1 | Brier | ECE | storm prevalence in test |\n|---|---|---|---|---|---|")
+    a(f"Same model ({cfg.model.default_strategy}, isotonic-calibrated), {len(gen)} ways of splitting the data. PR-AUC is only "
+      f"comparable across rows with similar {ev} prevalence, so prevalence is shown.\n")
+    a(f"| protocol | PR-AUC [95% CI] | macro-F1 | Brier | ECE | {ev} prevalence in test |\n|---|---|---|---|---|---|")
     for r in gen:
         a(f"| {r['protocol']} | {ci(r, 'pr_auc')} | {r['macro_f1']:.3f} | {r['brier']:.4f} | {r['ece']:.4f} | {r['prevalence']:.3f} |")
 
-    a("\n## 5. Probabilistic regression: peak utilisation in the next "
+    a(f"\n## 5. Probabilistic regression: {cfg.report.peak_label} in the next "
       f"{cfg.storm.horizon_s} s ({int(100 * prob['nominal_coverage'])}% intervals)\n")
-    a("| interval | coverage on unseen districts [95% CI] | coverage when a storm occurs | mean width | interval score |\n|---|---|---|---|---|")
+    a(f"| interval | coverage on unseen {u}s [95% CI] | coverage when a {ev} occurs | mean width | interval score |\n|---|---|---|---|---|")
     for k, v in prob["pooled"].items():
         a(f"| {k} | {ci(v, 'coverage')} | {v['coverage_when_storm']:.3f} | {v['mean_width']:.3f} | {v['interval_score']:.3f} |")
-    a("\nPer held-out district coverage (raw / conformalised): " + ", ".join(
+    a(f"\nPer held-out {u} coverage (raw / conformalised): " + ", ".join(
         f"{f['fold']} {f['coverage_raw']:.2f}/{f['coverage_cqr']:.2f}" for f in prob["per_fold"]) + ".")
     a(f"\nMedian forecast MAE {prob['median_mae']:.3f} vs {prob['median_mae_persistence_baseline']:.3f} for "
-      "'peak = current utilisation'.")
+      "'peak = current level'.")
 
-    a("\n## 6. Feature selection vs reduction (unseen districts)\n")
+    a(f"\n## 6. Feature selection vs reduction (unseen {u}s)\n")
     a("| method | k | PR-AUC [95% CI] | selection s | fit s | predict ms / 1k rows | fold stability (Jaccard) |\n|---|---|---|---|---|---|---|")
     for r in sel["rows"]:
         st = "" if r["fold_jaccard_stability"] is None else f"{r['fold_jaccard_stability']:.2f}"

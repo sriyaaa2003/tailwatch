@@ -68,7 +68,7 @@ def test_features_have_no_nulls_and_expected_columns(cfg, raw):
 def test_lodo_folds_never_leak_district_or_future(cfg, raw):
     feats = build_features(raw, cfg)
     for f in lodo_folds(feats, cfg):
-        d = feats["district"].to_numpy()
+        d = feats["group"].to_numpy()
         assert not np.any(d[f.train] == f.name) and not np.any(d[f.val] == f.name)
         t = feats["t"].to_numpy()
         assert t[f.train].max() + cfg.model.purge_s <= t[f.val].min()

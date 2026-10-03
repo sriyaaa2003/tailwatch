@@ -4,3 +4,6 @@ __pycache__/
 data/
 results/oof.parquet
 results/bench.log
+results/real/oof.parquet
+results/real/experiments.log
+results/twin_rerun.log

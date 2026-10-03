@@ -20,11 +20,11 @@ def cmd_simulate(cfg) -> None:
     raw_size = write_parquet(raw, data_dir(cfg) / "raw_1s.parquet")
     feats = build_features(raw, cfg)
     write_parquet(feats, data_dir(cfg) / "features.parquet")
-    by_d = feats.group_by("district").agg(pl.len().alias("rows"), pl.col("y").mean().alias("storm_rate")).sort("district")
+    by_d = feats.group_by("group").agg(pl.len().alias("rows"), pl.col("y").mean().alias("storm_rate")).sort("group")
     save_json(cfg, "data_summary.json", {
         "raw_rows": raw.height, "raw_parquet_bytes": raw_size, "feature_rows": feats.height,
         "storm_rate": float(feats["y"].mean()), "storm_count": int(feats["y"].sum()),
-        "by_district": by_d.to_dicts()})
+        "by_group": by_d.to_dicts()})
     log.info("raw %d rows, %d feature rows, storm rate %.2f%%", raw.height, feats.height, 100 * feats["y"].mean())
 
 
@@ -69,6 +69,53 @@ def cmd_radar(cfg) -> None:
     log.info("wrote %s", radar.build(read_features(cfg), oof, cfg))
 
 
+def _real_cfg(cfg, with_data: bool = True):
+    from . import real
+    df = read_features(real.derive_config(cfg)) if with_data else None
+    return real.derive_config(cfg, df)
+
+
+def cmd_real_download(cfg) -> None:
+    from . import real
+    log.info("dataset at %s", real.download(cfg))
+
+
+def cmd_real_prepare(cfg) -> None:
+    from . import real
+    dcfg = real.derive_config(cfg)
+    raw = real.load_raw(cfg)
+    s = real.streams(real.cell_bins(raw, cfg), cfg)
+    feats = real.build_real_features(s, dcfg)
+    write_parquet(s, data_dir(dcfg) / "streams.parquet")
+    write_parquet(feats, data_dir(dcfg) / "features.parquet")
+    save_json(dcfg, "data_summary.json", real.summarise(raw, s, feats, dcfg))
+    log.info("%d streams, %d decision points, high-load rate %.2f%%", s["cell_id"].n_unique(), feats.height,
+             100 * feats["y"].mean())
+
+
+def cmd_real_validate(cfg) -> None:
+    from . import real
+    dcfg = real.derive_config(cfg)
+    s = pl.read_parquet(data_dir(dcfg) / "streams.parquet")
+    res = real.compare_burstiness(s, cfg)
+    save_json(dcfg, "burstiness.json", res)
+    log.info("Hurst real median %.2f vs twin %.2f (iid %.2f)", res["real"]["H"]["median"], res["twin"]["H"]["median"],
+             res["iid_reference_H"])
+
+
+def cmd_real_experiments(cfg) -> None:
+    cmd_experiments(_real_cfg(cfg))
+
+
+def cmd_real_report(cfg) -> None:
+    cmd_report(_real_cfg(cfg))
+
+
+def cmd_compare(cfg) -> None:
+    from . import compare
+    log.info("wrote %s", compare.write(cfg))
+
+
 def cmd_report(cfg) -> None:
     import polars as pl
     from . import experiments as ex, plots, report
@@ -81,7 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="tailwatch")
     ap.add_argument("--config", default=None, help="YAML config (default: $TAILWATCH_CONFIG or configs/default.yaml)")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("simulate", "hurst", "experiments", "bench", "radar", "report", "all"):
+    for name in ("simulate", "hurst", "experiments", "bench", "radar", "report", "all", "real-download", "real-prepare",
+                 "real-validate", "real-experiments", "real-report", "real", "compare"):
         sub.add_parser(name)
     w = sub.add_parser("_bench-worker")
     w.add_argument("--engine"); w.add_argument("--path"); w.add_argument("--window", type=int)
@@ -94,8 +142,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     cfg = load_config(args.config)
     steps = {"simulate": cmd_simulate, "hurst": cmd_hurst, "experiments": cmd_experiments, "bench": cmd_bench,
-             "radar": cmd_radar, "report": cmd_report}
-    for name in (["simulate", "hurst", "experiments", "bench", "radar", "report"] if args.cmd == "all" else [args.cmd]):
+             "radar": cmd_radar, "report": cmd_report, "real-download": cmd_real_download,
+             "real-prepare": cmd_real_prepare, "real-validate": cmd_real_validate,
+             "real-experiments": cmd_real_experiments, "real-report": cmd_real_report, "compare": cmd_compare}
+    plan = {"all": ["simulate", "hurst", "experiments", "bench", "radar", "report"],
+            "real": ["real-download", "real-prepare", "real-validate", "real-experiments", "real-report", "compare"]}
+    for name in plan.get(args.cmd, [args.cmd]):
         log.info("== %s", name)
         steps[name](cfg)
     return 0

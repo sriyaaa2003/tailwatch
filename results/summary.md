@@ -22,8 +22,8 @@ Generator check (aggregated-variance Hurst exponent on load with surges and diur
 
 | strategy | PR-AUC [95% CI] | macro-F1 [95% CI] | Brier | mean predicted p (true rate 0.057) | train fit s |
 |---|---|---|---|---|---|
-| none | 0.492 [0.436, 0.547] | 0.731 [0.713, 0.749] | 0.0386 | 0.044 | 1.7 |
-| class_weight | 0.506 [0.450, 0.559] | 0.727 [0.706, 0.745] | 0.0640 | 0.133 | 1.1 |
+| none | 0.492 [0.436, 0.547] | 0.731 [0.713, 0.749] | 0.0386 | 0.044 | 1.5 |
+| class_weight | 0.506 [0.450, 0.559] | 0.727 [0.706, 0.745] | 0.0640 | 0.133 | 1.2 |
 | smote | 0.448 [0.396, 0.503] | 0.705 [0.686, 0.725] | 0.0418 | 0.072 | 1.4 |
 | undersample | 0.518 [0.459, 0.571] | 0.717 [0.698, 0.734] | 0.0482 | 0.103 | 0.7 |
 
@@ -74,7 +74,7 @@ Costs: missed storm = 20, false alarm = 1, so the Bayes threshold for a calibrat
 
 ## 4. Does the evaluation protocol flatter the model?
 
-Same model (class_weight, isotonic-calibrated), four splits. PR-AUC is only comparable across rows with similar storm prevalence, so prevalence is shown.
+Same model (class_weight, isotonic-calibrated), 4 ways of splitting the data. PR-AUC is only comparable across rows with similar storm prevalence, so prevalence is shown.
 
 | protocol | PR-AUC [95% CI] | macro-F1 | Brier | ECE | storm prevalence in test |
 |---|---|---|---|---|---|
@@ -92,29 +92,29 @@ Same model (class_weight, isotonic-calibrated), four splits. PR-AUC is only comp
 
 Per held-out district coverage (raw / conformalised): business 0.84/0.87, leisure 0.68/0.71, residential 0.78/0.81, transit 0.75/0.79.
 
-Median forecast MAE 0.097 vs 0.269 for 'peak = current utilisation'.
+Median forecast MAE 0.097 vs 0.269 for 'peak = current level'.
 
 ## 6. Feature selection vs reduction (unseen districts)
 
 | method | k | PR-AUC [95% CI] | selection s | fit s | predict ms / 1k rows | fold stability (Jaccard) |
 |---|---|---|---|---|---|---|
-| all | 31 | 0.506 [0.450, 0.559] | 0.00 | 1.15 | 4.01 |  |
-| mutual_info | 3 | 0.508 [0.452, 0.564] | 4.99 | 0.64 | 3.81 | 1.00 |
-| mutual_info | 6 | 0.524 [0.468, 0.579] | 4.99 | 0.67 | 3.92 | 0.76 |
-| mutual_info | 10 | 0.525 [0.470, 0.580] | 4.99 | 0.78 | 3.93 | 0.85 |
-| mutual_info | 16 | 0.536 [0.478, 0.589] | 4.99 | 0.84 | 4.07 | 1.00 |
-| l1 | 3 | 0.523 [0.471, 0.576] | 1.08 | 0.64 | 3.82 | 0.43 |
-| l1 | 6 | 0.503 [0.445, 0.559] | 1.08 | 0.68 | 3.69 | 0.49 |
-| l1 | 10 | 0.507 [0.450, 0.564] | 1.08 | 0.78 | 3.61 | 0.60 |
-| l1 | 16 | 0.494 [0.440, 0.550] | 1.08 | 0.87 | 3.77 | 0.62 |
-| tree | 3 | 0.531 [0.479, 0.585] | 1.16 | 0.64 | 4.08 | 1.00 |
-| tree | 6 | 0.537 [0.486, 0.592] | 1.16 | 0.67 | 4.16 | 1.00 |
-| tree | 10 | 0.494 [0.443, 0.549] | 1.16 | 0.77 | 3.89 | 0.91 |
-| tree | 16 | 0.513 [0.462, 0.568] | 1.16 | 0.85 | 3.91 | 0.83 |
-| pca | 3 | 0.543 [0.488, 0.597] | 0.05 | 0.63 | 3.68 |  |
-| pca | 6 | 0.524 [0.470, 0.579] | 0.04 | 0.65 | 3.47 |  |
-| pca | 10 | 0.520 [0.464, 0.574] | 0.04 | 0.75 | 3.49 |  |
-| pca | 16 | 0.523 [0.471, 0.576] | 0.04 | 0.84 | 3.68 |  |
+| all | 31 | 0.506 [0.450, 0.559] | 0.00 | 1.11 | 3.98 |  |
+| mutual_info | 3 | 0.508 [0.452, 0.564] | 5.08 | 0.62 | 3.83 | 1.00 |
+| mutual_info | 6 | 0.524 [0.468, 0.579] | 5.08 | 0.65 | 3.91 | 0.76 |
+| mutual_info | 10 | 0.525 [0.470, 0.580] | 5.08 | 0.74 | 3.85 | 0.85 |
+| mutual_info | 16 | 0.536 [0.478, 0.589] | 5.08 | 0.80 | 4.09 | 1.00 |
+| l1 | 3 | 0.523 [0.471, 0.576] | 1.03 | 0.60 | 3.66 | 0.43 |
+| l1 | 6 | 0.503 [0.445, 0.559] | 1.03 | 0.66 | 3.72 | 0.49 |
+| l1 | 10 | 0.507 [0.450, 0.564] | 1.03 | 0.76 | 3.54 | 0.60 |
+| l1 | 16 | 0.494 [0.440, 0.550] | 1.03 | 0.82 | 3.70 | 0.62 |
+| tree | 3 | 0.531 [0.479, 0.585] | 1.09 | 0.61 | 3.98 | 1.00 |
+| tree | 6 | 0.537 [0.486, 0.592] | 1.09 | 0.63 | 3.90 | 1.00 |
+| tree | 10 | 0.494 [0.443, 0.549] | 1.09 | 0.73 | 3.91 | 0.91 |
+| tree | 16 | 0.513 [0.462, 0.568] | 1.09 | 0.82 | 3.93 | 0.83 |
+| pca | 3 | 0.543 [0.488, 0.597] | 0.05 | 0.61 | 3.66 |  |
+| pca | 6 | 0.524 [0.470, 0.579] | 0.05 | 0.63 | 3.45 |  |
+| pca | 10 | 0.520 [0.464, 0.574] | 0.05 | 0.74 | 3.45 |  |
+| pca | 16 | 0.523 [0.471, 0.576] | 0.05 | 0.82 | 3.58 |  |
 
 Features chosen by tree importance in every fold at k=3: util_mean_30, util_max_30, util_max_60.
 

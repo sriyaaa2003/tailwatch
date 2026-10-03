@@ -87,6 +87,7 @@ class Model:
     purge_s: int
     strategies: list[str]
     default_strategy: str
+    val_mode: str                 # "time": last val_fraction of time; "stream": every k-th stream (k = 1/val_fraction)
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,7 @@ class Policy:
 class Generalization:
     random_test_fraction: float
     temporal_test_fraction: float
+    protocols: list[str]          # subset of: random, temporal, unseen, unseen_future
 
 
 @dataclass(frozen=True)
@@ -151,6 +153,41 @@ class Radar:
 
 
 @dataclass(frozen=True)
+class Report:
+    group_label: str              # what a held-out group is called in tables and plots
+    kind: str                     # "twin" | "real": selects the data section of the report
+    event_label: str              # what the rare event is called ("storm" on the twin, "burst" on the real trace)
+    peak_label: str               # what the regression target is called in tables
+
+
+@dataclass(frozen=True)
+class Real:
+    """Real-trace study (msData, Open RAN 5G testbed). Nothing here applies to the digital twin."""
+    url: str
+    expected_bytes: int
+    filename: str
+    results_dir: str
+    data_dir: str
+    group_col: str                # column that plays the role of "district" (held out as a whole)
+    timestamp_ticks_per_s: float  # timestamp unit; inferred from epoch magnitude, see README
+    bin_s: float
+    max_gap_s: float              # a longer silence in the cell's record stream starts a new stream
+    min_stream_s: int
+    rate_unit_bps: float          # mac_dl_brate unit (bit/s) -> load is reported in Mbit/s
+    storm_mbps: float             # configured "high load" level, NOT a measured capacity
+    horizon_s: int
+    windows_s: list[int]
+    stride_s: int
+    n_boot: int
+    block_s: int
+    hurst_min_stream_s: int       # only streams at least this long enter the Hurst comparison
+    hurst_min_scale_s: int
+    hurst_max_scale_div: int
+    twin_few_sources: int         # sources per cell for the "testbed-sized" twin variant (the testbed has <= 4 UEs)
+    storm_tail_labels: list[str]  # traffic labels listed in the descriptive "who is present at a burst" table
+
+
+@dataclass(frozen=True)
 class Config:
     seed: int
     paths: Paths
@@ -167,6 +204,8 @@ class Config:
     hurst: Hurst
     scale: Scale
     radar: Radar
+    report: Report
+    real: Real
 
 
 def _build(tp: typing.Any, data: typing.Any, path: str) -> typing.Any:
@@ -238,6 +277,16 @@ def validate(cfg: Config) -> None:
         raise ConfigError("model.val_fraction must be in (0,0.5)")
     if cfg.policy.cost_miss <= 0 or cfg.policy.cost_false_alarm <= 0:
         raise ConfigError("policy costs must be positive")
+    if cfg.model.val_mode not in {"time", "stream"}:
+        raise ConfigError("model.val_mode must be time|stream")
+    bad = set(cfg.generalization.protocols) - {"random", "temporal", "unseen", "unseen_future"}
+    if bad:
+        raise ConfigError(f"unknown generalization protocols {sorted(bad)}")
+    if cfg.report.kind not in {"twin", "real"}:
+        raise ConfigError("report.kind must be twin|real")
+    r = cfg.real
+    if r.bin_s <= 0 or r.max_gap_s < r.bin_s or r.min_stream_s < 2 * r.horizon_s or r.storm_mbps <= 0:
+        raise ConfigError("real: inconsistent bin/gap/stream/horizon/storm settings")
     if cfg.radar.variant not in {"raw", "sigmoid", "isotonic"}:
         raise ConfigError("radar.variant must be raw|sigmoid|isotonic")
 

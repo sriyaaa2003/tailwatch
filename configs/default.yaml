@@ -56,6 +56,7 @@ model:
   purge_s: 120                  # gap between train and val to stop window overlap leaking
   strategies: [none, class_weight, smote, undersample]
   default_strategy: class_weight
+  val_mode: time                # twin: validation = last val_fraction of time inside training districts
 
 eval:
   n_boot: 300
@@ -80,6 +81,7 @@ policy:
 generalization:
   random_test_fraction: 0.3
   temporal_test_fraction: 0.3
+  protocols: [random, temporal, unseen, unseen_future]
 
 hurst:
   validate_cells: 6
@@ -101,3 +103,37 @@ radar:
   lead_s: 300
   window_s: 1200
   event_index: 0
+
+report:
+  group_label: district
+  kind: twin
+  event_label: storm
+  peak_label: peak utilisation
+
+# ---------------------------------------------------------------------------------------------------------------
+# Real-trace study on msData (Open RAN 5G testbed, OpenIreland). Run with `tailwatch real`.
+# Source: https://huggingface.co/datasets/subinak/Open_RAN_Performance_Measurement_Dataset_with_Traffic_and_Mobility_Labels
+# Licence: MIT on the dataset card, CC BY 4.0 in the msData paper (arXiv 2603.16497); both require attribution, see README.
+real:
+  url: https://huggingface.co/datasets/subinak/Open_RAN_Performance_Measurement_Dataset_with_Traffic_and_Mobility_Labels/resolve/main/5G_millisecond.csv
+  expected_bytes: 794453804
+  filename: 5G_millisecond.csv
+  data_dir: data/real
+  results_dir: results/real
+  group_col: mob_pattern        # car / bus / train / static / pedestrian are held out as whole groups
+  timestamp_ticks_per_s: 100000 # 10 microsecond ticks: epoch seconds x 1e5 (inferred, not documented)
+  bin_s: 1.0
+  max_gap_s: 3.0
+  min_stream_s: 120
+  rate_unit_bps: 1000000.0      # mac_dl_brate is bit/s, load is expressed in Mbit/s
+  storm_mbps: 10.0              # configured high-load level, about the 99.3rd percentile of 1 s cell load (0.7% of bins)
+  horizon_s: 10
+  windows_s: [5, 15, 30]
+  stride_s: 2
+  n_boot: 100
+  block_s: 60
+  hurst_min_stream_s: 300
+  hurst_min_scale_s: 4
+  hurst_max_scale_div: 6
+  twin_few_sources: 4           # sources per cell for a testbed-sized twin (the real cell serves at most 4 UEs)
+  storm_tail_labels: [dos-hulk-C, ddos-ripper-C, slowloris-C, portscan, youtube, Web Browsing, SIPP, iot]

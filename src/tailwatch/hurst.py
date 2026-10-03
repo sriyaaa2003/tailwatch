@@ -40,7 +40,7 @@ def validate_generator(cfg: Config) -> dict:
     rows = []
     for cid in cells:
         load = df.filter(df["cell_id"] == cid)["load_mbps"].to_numpy()
-        dist = next(d for d in cfg.city.districts if d.name == df.filter(df["cell_id"] == cid)["district"][0])
+        dist = next(d for d in cfg.city.districts if d.name == df.filter(df["cell_id"] == cid)["group"][0])
         rows.append({
             "cell_id": cid, "district": dist.name,
             "H_measured": hurst_aggvar(load, cfg.hurst.min_scale_s, cfg.hurst.max_scale_div),

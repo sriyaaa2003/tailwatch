@@ -13,8 +13,7 @@ from sklearn.metrics import average_precision_score
 from sklearn.preprocessing import StandardScaler
 
 from .config import Config
-from .core import Timer, block_bootstrap, fit_strategy, groups_for_bootstrap, lodo_folds, xy
-from .features import feature_names
+from .core import Timer, block_bootstrap, feature_cols, fit_strategy, groups_for_bootstrap, lodo_folds, xy
 
 METHODS = ("mutual_info", "l1", "tree", "pca")
 
@@ -43,7 +42,7 @@ def _rank(method: str, X: np.ndarray, y: np.ndarray, cfg: Config) -> np.ndarray:
 
 
 def run(df: pl.DataFrame, cfg: Config) -> dict:
-    names = feature_names(cfg)
+    names = feature_cols(df)
     folds = lodo_folds(df, cfg)
     groups = groups_for_bootstrap(df, cfg)
     configs = [("all", len(names))] + [(m, k) for m in METHODS for k in cfg.selection.ks if k < len(names)]

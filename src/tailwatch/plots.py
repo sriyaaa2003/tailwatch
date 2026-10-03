@@ -29,7 +29,7 @@ def reliability(cfg: Config) -> None:
             ax.plot(c["mean_pred"], c["frac_pos"], "o-", color=COLORS[v], label=v, ms=4)
         ax.set_title(s)
         ax.set_xlabel("predicted probability")
-    np.atleast_1d(axes)[0].set_ylabel("observed storm frequency")
+    np.atleast_1d(axes)[0].set_ylabel(f"observed {cfg.report.event_label} frequency")
     np.atleast_1d(axes)[0].legend()
     ax.set_xlim(0, 0.6); ax.set_ylim(0, 0.6)
     _save(fig, cfg, "reliability")
@@ -44,7 +44,7 @@ def cost_curves(cfg: Config) -> None:
             ax.plot(grid, pol["curves"][f"{s}|{v}"], ls, color=COLORS[v], lw=1.4, label=f"{s}/{v}" if s == cfg.model.default_strategy else None)
     ax.axvline(pol["bayes_threshold"], color="k", lw=1)
     ax.text(pol["bayes_threshold"] + 0.01, ax.get_ylim()[1] * 0.9, "Bayes threshold\nc_fa/(c_fa+c_miss)", fontsize=8)
-    ax.set_xlabel("alert threshold"); ax.set_ylabel("cost per 1000 decisions (held-out districts)")
+    ax.set_xlabel("alert threshold"); ax.set_ylabel(f"cost per 1000 decisions (held-out {cfg.report.group_label}s)")
     ax.set_title("Cost vs alert threshold (red = raw scores, blue = isotonic)")
     ax.set_ylim(0, min(ax.get_ylim()[1], pol["never_alert_cost"]))
     _save(fig, cfg, "cost_curve")
@@ -59,7 +59,7 @@ def generalization(cfg: Config) -> None:
     for i, r in enumerate(rows):
         ax.plot(r["prevalence"], i, "k|", ms=18)
     ax.set_yticks(y, [r["protocol"] for r in rows]); ax.invert_yaxis()
-    ax.set_xlabel("PR-AUC (95% block-bootstrap CI); black tick = no-skill level (storm prevalence)")
+    ax.set_xlabel(f"PR-AUC (95% CI); black tick = no-skill level ({cfg.report.event_label} rate)", fontsize=9)
     _save(fig, cfg, "generalization")
 
 
@@ -73,7 +73,7 @@ def selection(cfg: Config) -> None:
         ax.errorbar([r["k"] for r in rs], [r["pr_auc"] for r in rs],
                     yerr=[[r["pr_auc"] - r["pr_auc_lo"] for r in rs], [r["pr_auc_hi"] - r["pr_auc"] for r in rs]],
                     marker=mk, capsize=2, label=m, alpha=0.85)
-    ax.set_xlabel("features kept (k)"); ax.set_ylabel("PR-AUC, unseen districts"); ax.legend(fontsize=8)
+    ax.set_xlabel("features kept (k)"); ax.set_ylabel(f"PR-AUC, unseen {cfg.report.group_label}s"); ax.legend(fontsize=8)
     _save(fig, cfg, "selection")
 
 
@@ -91,7 +91,7 @@ def intervals(cfg: Config) -> None:
     axes[1].bar(x - 0.2, [f["coverage_raw"] for f in p["per_fold"]], 0.4, label="raw quantiles", color="#e69f00")
     axes[1].bar(x + 0.2, [f["coverage_cqr"] for f in p["per_fold"]], 0.4, label="conformalised", color="#1f77b4")
     axes[1].axhline(p["nominal_coverage"], color="k", ls="--", lw=1)
-    axes[1].set_xticks(x, names); axes[1].set_ylabel("coverage on unseen district"); axes[1].legend(fontsize=8, loc="lower right")
+    axes[1].set_xticks(x, names); axes[1].set_ylabel(f"coverage on unseen {cfg.report.group_label}"); axes[1].legend(fontsize=8, loc="lower right")
     axes[1].set_ylim(0.5, 1.0)
     _save(fig, cfg, "intervals")
 

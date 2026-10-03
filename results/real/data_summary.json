@@ -1,0 +1,102 @@
+{
+  "raw_rows": 3175140,
+  "cell_bins": 160701,
+  "streams": 702,
+  "stream_seconds": 160701.0,
+  "feature_rows": 65944,
+  "storm_rate": 0.039836831250758216,
+  "storm_count": 2627,
+  "storm_mbps": 10.0,
+  "horizon_s": 10,
+  "load_quantiles_mbps": {
+    "0.5": 1.6030067272727273,
+    "0.9": 3.9308172,
+    "0.95": 5.235150350877193,
+    "0.99": 8.663860859649123
+  },
+  "frac_load_ge_storm": 0.005731140440943118,
+  "record_cadence": {
+    "p05_ms": 43.97273063659668,
+    "median_ms": 97.4886417388916,
+    "p95_ms": 295.4258918762207
+  },
+  "by_group": [
+    {
+      "group": "bus",
+      "rows": 7531,
+      "storm_rate": 0.04421723542690214,
+      "streams": 95
+    },
+    {
+      "group": "car",
+      "rows": 31066,
+      "storm_rate": 0.046417305092383954,
+      "streams": 340
+    },
+    {
+      "group": "pedestrian",
+      "rows": 19354,
+      "storm_rate": 0.02939960731631704,
+      "streams": 178
+    },
+    {
+      "group": "static",
+      "rows": 4582,
+      "storm_rate": 0.032955041466608465,
+      "streams": 54
+    },
+    {
+      "group": "train",
+      "rows": 3411,
+      "storm_rate": 0.03869832893579595,
+      "streams": 35
+    }
+  ],
+  "by_top_label": [
+    {
+      "top_label": "ddos-ripper-C",
+      "rows": 11546,
+      "storm_rate": 0.014983544084531439
+    },
+    {
+      "top_label": "dos-hulk-C",
+      "rows": 10956,
+      "storm_rate": 0.09894121942314714
+    },
+    {
+      "top_label": "iot",
+      "rows": 9992,
+      "storm_rate": 0.010008006405124099
+    },
+    {
+      "top_label": "portscan",
+      "rows": 9847,
+      "storm_rate": 0.023662029044378998
+    },
+    {
+      "top_label": "SIPP",
+      "rows": 7735,
+      "storm_rate": 0.011506140917905625
+    },
+    {
+      "top_label": "youtube",
+      "rows": 7369,
+      "storm_rate": 0.058623965259872436
+    },
+    {
+      "top_label": "Web Browsing",
+      "rows": 4482,
+      "storm_rate": 0.07340473003123606
+    },
+    {
+      "top_label": "slowloris-C",
+      "rows": 3851,
+      "storm_rate": 0.04648143339392365
+    },
+    {
+      "top_label": "none",
+      "rows": 166,
+      "storm_rate": 0.04819277108433735
+    }
+  ]
+}
