@@ -1,0 +1,29 @@
+{
+  "cells": [
+    {
+      "cell_id": 0,
+      "district": "residential",
+      "H_measured": 0.7563648033053771,
+      "H_theory": 0.85
+    },
+    {
+      "cell_id": 2,
+      "district": "business",
+      "H_measured": 0.731690321316028,
+      "H_theory": 0.8
+    },
+    {
+      "cell_id": 4,
+      "district": "leisure",
+      "H_measured": 0.7692976752885021,
+      "H_theory": 0.9
+    },
+    {
+      "cell_id": 6,
+      "district": "transit",
+      "H_measured": 0.8189732543397743,
+      "H_theory": 0.875
+    }
+  ],
+  "H_iid_reference": 0.5264574033210108
+}

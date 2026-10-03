@@ -1,0 +1,103 @@
+# tailwatch default configuration. Every tunable in the project lives here.
+# Loaded and type-validated by tailwatch.config.load_config(); changing a value needs no code change.
+seed: 7
+
+paths:
+  data_dir: data
+  results_dir: results
+
+city:
+  grid_rows: 6
+  grid_cols: 8
+  # Districts are vertical column bands [col_start, col_end). Profiles differ on purpose so that
+  # leave-one-district-out generalisation is a real test and not a relabelling of one distribution.
+  districts:
+    - {name: residential, col_start: 0, col_end: 2, n_sources: 55, rate_mean_mbps: 2.0, rate_sigma: 0.8, on_alpha: 1.5, off_alpha: 1.3, target_mean_util: 0.42}
+    - {name: business,    col_start: 2, col_end: 4, n_sources: 70, rate_mean_mbps: 3.0, rate_sigma: 0.6, on_alpha: 1.6, off_alpha: 1.4, target_mean_util: 0.45}
+    - {name: leisure,     col_start: 4, col_end: 6, n_sources: 45, rate_mean_mbps: 4.0, rate_sigma: 1.0, on_alpha: 1.3, off_alpha: 1.2, target_mean_util: 0.40}
+    - {name: transit,     col_start: 6, col_end: 8, n_sources: 60, rate_mean_mbps: 2.5, rate_sigma: 0.9, on_alpha: 1.4, off_alpha: 1.25, target_mean_util: 0.43}
+
+sim:
+  duration_s: 14400
+  on_min_s: 2.0
+  off_min_s: 6.0
+  capacity_jitter_sigma: 0.10
+  diurnal_amplitude: 0.15
+  diurnal_period_s: 14400
+  rsrp_base_dbm: -82.0
+  rsrp_util_slope_db: -28.0
+  rsrp_noise_db: 1.5
+  # Scripted demand surges (stadium letting out, train arrival). The surge adds `extra_source_factor` x n_sources
+  # extra ON/OFF sources to the district's cells, ramped in and out linearly.
+  events:
+    - {district: leisure,     start_s: 3000, duration_s: 900, ramp_s: 240, extra_source_factor: 0.55}
+    - {district: transit,     start_s: 6200, duration_s: 600, ramp_s: 120, extra_source_factor: 0.60}
+    - {district: business,    start_s: 9000, duration_s: 1200, ramp_s: 300, extra_source_factor: 0.40}
+    - {district: residential, start_s: 11800, duration_s: 900, ramp_s: 240, extra_source_factor: 0.50}
+    - {district: leisure,     start_s: 12600, duration_s: 600, ramp_s: 120, extra_source_factor: 0.45}
+
+storm:
+  utilisation_threshold: 1.1   # demand/capacity at or above which a cell is congested (1.1 = demand 10% over capacity)
+  horizon_s: 30                 # a "storm" label = onset of congestion within the next horizon_s seconds
+  # Rows already congested are excluded: the task is forecasting onset, not persistence.
+
+features:
+  windows_s: [10, 30, 60]
+  stride_s: 5                   # keep one decision point every stride_s seconds per cell
+
+model:
+  max_iter: 150
+  learning_rate: 0.08
+  max_leaf_nodes: 31
+  min_samples_leaf: 40
+  smote_ratio: 0.3              # minority/majority ratio after resampling
+  undersample_ratio: 0.3
+  val_fraction: 0.25            # last fraction of time inside training districts, used for threshold + calibration
+  purge_s: 120                  # gap between train and val to stop window overlap leaking
+  strategies: [none, class_weight, smote, undersample]
+  default_strategy: class_weight
+
+eval:
+  n_boot: 300
+  block_s: 600                  # block-bootstrap unit (per cell, per block_s seconds) respects autocorrelation
+  ci_level: 0.95
+  reliability_bins: 10
+
+probabilistic:
+  alpha: 0.2                    # target miscoverage -> 80% prediction intervals
+  quantile_max_iter: 120
+
+selection:
+  ks: [3, 6, 10, 16]
+  l1_c: 0.05
+  mi_subsample: 30000
+
+policy:
+  cost_miss: 20.0               # cost of a missed congestion onset (users suffer)
+  cost_false_alarm: 1.0         # cost of a needless capacity pre-allocation
+  threshold_grid: 99
+
+generalization:
+  random_test_fraction: 0.3
+  temporal_test_fraction: 0.3
+
+hurst:
+  validate_cells: 6
+  min_scale_s: 8
+  max_scale_div: 8
+
+scale:
+  multipliers: [1, 10, 100]
+  base_cells: 48
+  base_duration_s: 3600
+  window_s: 30
+  engines: [pandas, polars, duckdb]
+  timeout_s: 600           # per run; a run that exceeds it is recorded as a timeout
+  repeats: 3               # each timing is the median of this many warm runs
+
+radar:
+  strategy: class_weight
+  variant: isotonic
+  lead_s: 300
+  window_s: 1200
+  event_index: 0

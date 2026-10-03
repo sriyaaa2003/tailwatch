@@ -1,0 +1,303 @@
+{
+  "rows": [
+    {
+      "method": "all",
+      "k": 31,
+      "pr_auc": 0.505660450996703,
+      "pr_auc_lo": 0.44975458335648594,
+      "pr_auc_hi": 0.5589586354584178,
+      "select_seconds": 0.0,
+      "fit_seconds": 1.14706712498446,
+      "predict_ms_per_1k_rows": 4.005612732966974,
+      "fold_jaccard_stability": null,
+      "features": null
+    },
+    {
+      "method": "mutual_info",
+      "k": 3,
+      "pr_auc": 0.5076169032878606,
+      "pr_auc_lo": 0.4523123181639736,
+      "pr_auc_hi": 0.5643014310169583,
+      "select_seconds": 4.988334999972722,
+      "fit_seconds": 0.6415746500133537,
+      "predict_ms_per_1k_rows": 3.809166735747823,
+      "fold_jaccard_stability": 1.0,
+      "features": [
+        "util_max_30",
+        "util_max_60",
+        "util_min_60"
+      ]
+    },
+    {
+      "method": "mutual_info",
+      "k": 6,
+      "pr_auc": 0.5242259518885378,
+      "pr_auc_lo": 0.4681806620758417,
+      "pr_auc_hi": 0.579315829018984,
+      "select_seconds": 4.988334999972722,
+      "fit_seconds": 0.6747970500146039,
+      "predict_ms_per_1k_rows": 3.917414795024306,
+      "fold_jaccard_stability": 0.761904761904762,
+      "features": [
+        "util_max_30",
+        "util_mean_60",
+        "util_max_60",
+        "util_min_60"
+      ]
+    },
+    {
+      "method": "mutual_info",
+      "k": 10,
+      "pr_auc": 0.5250364182006416,
+      "pr_auc_lo": 0.4702025276321781,
+      "pr_auc_hi": 0.580175356540687,
+      "select_seconds": 4.988334999972722,
+      "fit_seconds": 0.776345574966399,
+      "predict_ms_per_1k_rows": 3.930986060814641,
+      "fold_jaccard_stability": 0.8484848484848486,
+      "features": [
+        "util_mean_10",
+        "util_max_10",
+        "util_mean_30",
+        "util_max_30",
+        "util_min_30",
+        "util_mean_60",
+        "util_max_60",
+        "util_min_60",
+        "rsrp_mean_60"
+      ]
+    },
+    {
+      "method": "mutual_info",
+      "k": 16,
+      "pr_auc": 0.5356084304043016,
+      "pr_auc_lo": 0.4781809967142657,
+      "pr_auc_hi": 0.5892706057628592,
+      "select_seconds": 4.988334999972722,
+      "fit_seconds": 0.835616475000279,
+      "predict_ms_per_1k_rows": 4.069792152507212,
+      "fold_jaccard_stability": 1.0,
+      "features": [
+        "util_now",
+        "rsrp_now",
+        "util_mean_10",
+        "util_max_10",
+        "util_min_10",
+        "rsrp_mean_10",
+        "util_mean_30",
+        "util_std_30",
+        "util_max_30",
+        "util_min_30",
+        "rsrp_mean_30",
+        "util_mean_60",
+        "util_std_60",
+        "util_max_60",
+        "util_min_60",
+        "rsrp_mean_60"
+      ]
+    },
+    {
+      "method": "l1",
+      "k": 3,
+      "pr_auc": 0.5234733220502704,
+      "pr_auc_lo": 0.4713989443928681,
+      "pr_auc_hi": 0.5756037074292455,
+      "select_seconds": 1.0778746500145644,
+      "fit_seconds": 0.6407906249805819,
+      "predict_ms_per_1k_rows": 3.815556470236397,
+      "fold_jaccard_stability": 0.4333333333333333,
+      "features": [
+        "util_now"
+      ]
+    },
+    {
+      "method": "l1",
+      "k": 6,
+      "pr_auc": 0.5029638601952087,
+      "pr_auc_lo": 0.445039124004278,
+      "pr_auc_hi": 0.5592313543650433,
+      "select_seconds": 1.0778746500145644,
+      "fit_seconds": 0.6774956249864772,
+      "predict_ms_per_1k_rows": 3.694199403085281,
+      "fold_jaccard_stability": 0.48571428571428577,
+      "features": [
+        "util_now",
+        "util_mean_60"
+      ]
+    },
+    {
+      "method": "l1",
+      "k": 10,
+      "pr_auc": 0.5068057448479779,
+      "pr_auc_lo": 0.4504443783246801,
+      "pr_auc_hi": 0.5637626088820503,
+      "select_seconds": 1.0778746500145644,
+      "fit_seconds": 0.776915624999674,
+      "predict_ms_per_1k_rows": 3.6078894127118075,
+      "fold_jaccard_stability": 0.6025641025641025,
+      "features": [
+        "util_now",
+        "users_now",
+        "tod_sin",
+        "util_max_30",
+        "util_mean_60",
+        "util_max_60"
+      ]
+    },
+    {
+      "method": "l1",
+      "k": 16,
+      "pr_auc": 0.4935753468135244,
+      "pr_auc_lo": 0.4397154167714908,
+      "pr_auc_hi": 0.5504321588818991,
+      "select_seconds": 1.0778746500145644,
+      "fit_seconds": 0.867223825014662,
+      "predict_ms_per_1k_rows": 3.772083580858822,
+      "fold_jaccard_stability": 0.6167084377610693,
+      "features": [
+        "util_now",
+        "users_now",
+        "tod_sin",
+        "util_max_10",
+        "util_max_30",
+        "util_mean_60",
+        "util_std_60",
+        "util_max_60",
+        "util_delta_60",
+        "users_delta_60"
+      ]
+    },
+    {
+      "method": "tree",
+      "k": 3,
+      "pr_auc": 0.5314672235223815,
+      "pr_auc_lo": 0.47942216660874676,
+      "pr_auc_hi": 0.5853433517824402,
+      "select_seconds": 1.1634638000105042,
+      "fit_seconds": 0.6400295250059571,
+      "predict_ms_per_1k_rows": 4.080879070342677,
+      "fold_jaccard_stability": 1.0,
+      "features": [
+        "util_mean_30",
+        "util_max_30",
+        "util_max_60"
+      ]
+    },
+    {
+      "method": "tree",
+      "k": 6,
+      "pr_auc": 0.537259044297597,
+      "pr_auc_lo": 0.4859972841919403,
+      "pr_auc_hi": 0.5917064269000245,
+      "select_seconds": 1.1634638000105042,
+      "fit_seconds": 0.6680136999639217,
+      "predict_ms_per_1k_rows": 4.156647316765386,
+      "fold_jaccard_stability": 1.0,
+      "features": [
+        "util_max_10",
+        "util_mean_30",
+        "util_max_30",
+        "util_mean_60",
+        "util_std_60",
+        "util_max_60"
+      ]
+    },
+    {
+      "method": "tree",
+      "k": 10,
+      "pr_auc": 0.4940980445198508,
+      "pr_auc_lo": 0.44304828808028507,
+      "pr_auc_hi": 0.5485674432995438,
+      "select_seconds": 1.1634638000105042,
+      "fit_seconds": 0.7669435749994591,
+      "predict_ms_per_1k_rows": 3.888935230023652,
+      "fold_jaccard_stability": 0.9090909090909092,
+      "features": [
+        "util_mean_10",
+        "util_max_10",
+        "util_mean_30",
+        "util_max_30",
+        "rsrp_mean_30",
+        "util_mean_60",
+        "util_std_60",
+        "util_max_60",
+        "rsrp_mean_60"
+      ]
+    },
+    {
+      "method": "tree",
+      "k": 16,
+      "pr_auc": 0.5134670392102476,
+      "pr_auc_lo": 0.46181703871192326,
+      "pr_auc_hi": 0.5675499668123137,
+      "select_seconds": 1.1634638000105042,
+      "fit_seconds": 0.8471379499824252,
+      "predict_ms_per_1k_rows": 3.9057766100061047,
+      "fold_jaccard_stability": 0.8300653594771242,
+      "features": [
+        "util_now",
+        "rsrp_now",
+        "util_mean_10",
+        "util_max_10",
+        "rsrp_mean_10",
+        "util_mean_30",
+        "util_std_30",
+        "util_max_30",
+        "rsrp_mean_30",
+        "util_mean_60",
+        "util_std_60",
+        "util_max_60",
+        "rsrp_mean_60"
+      ]
+    },
+    {
+      "method": "pca",
+      "k": 3,
+      "pr_auc": 0.5426843578140664,
+      "pr_auc_lo": 0.4883842515630788,
+      "pr_auc_hi": 0.5972927584997844,
+      "select_seconds": 0.04678297502687201,
+      "fit_seconds": 0.6323163500055671,
+      "predict_ms_per_1k_rows": 3.6750421493201273,
+      "fold_jaccard_stability": null,
+      "features": null
+    },
+    {
+      "method": "pca",
+      "k": 6,
+      "pr_auc": 0.5235862042927727,
+      "pr_auc_lo": 0.4700080493535234,
+      "pr_auc_hi": 0.5787960938935719,
+      "select_seconds": 0.039265574974706396,
+      "fit_seconds": 0.6480138250335585,
+      "predict_ms_per_1k_rows": 3.4667061153533636,
+      "fold_jaccard_stability": null,
+      "features": null
+    },
+    {
+      "method": "pca",
+      "k": 10,
+      "pr_auc": 0.5196498870535087,
+      "pr_auc_lo": 0.4637515570023114,
+      "pr_auc_hi": 0.5736749761411497,
+      "select_seconds": 0.04488027503248304,
+      "fit_seconds": 0.7497432250238489,
+      "predict_ms_per_1k_rows": 3.492738112326389,
+      "fold_jaccard_stability": null,
+      "features": null
+    },
+    {
+      "method": "pca",
+      "k": 16,
+      "pr_auc": 0.5227005754100852,
+      "pr_auc_lo": 0.4708688414673834,
+      "pr_auc_hi": 0.5763030670021217,
+      "select_seconds": 0.03981455002212897,
+      "fit_seconds": 0.8406619500310626,
+      "predict_ms_per_1k_rows": 3.68448183894702,
+      "fold_jaccard_stability": null,
+      "features": null
+    }
+  ],
+  "n_features_total": 31
+}

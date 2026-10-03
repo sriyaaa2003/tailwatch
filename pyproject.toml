@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tailwatch"
+version = "0.1.0"
+description = "Storm radar for the radio network: calibrated, geographically honest forecasts of congestion bursts."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy", "pandas", "polars", "pyarrow", "scikit-learn", "imbalanced-learn",
+  "scipy", "matplotlib", "pyyaml", "psutil",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+duckdb = ["duckdb"]
+
+[project.scripts]
+tailwatch = "tailwatch.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
