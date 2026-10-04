@@ -101,6 +101,53 @@ def _district(cfg: Config, name: str) -> District:
     return next(d for d in cfg.city.districts if d.name == name)
 
 
+@dataclass
+class CellDraw:
+    """Every random draw that defines one cell's users, before any outage or aggregation.
+
+    The generator is returned positioned just after the source draws, so a caller continues with the same stream
+    (capacity, then signal noise) and gets exactly the numbers `simulate` always produced."""
+    cid: int
+    group: str
+    prof: District
+    rng: np.random.Generator
+    n_src: int
+    rates: np.ndarray                 # Mbit/s of each base source while ON
+    states: list[np.ndarray]          # bool ON/OFF series per base source
+    extra_rates: np.ndarray           # surge sources (zero-length when the district has no surge)
+    extra_states: list[np.ndarray]    # float ON/OFF series gated by the surge envelope
+
+
+def draw_cell(cfg: Config, sim: Sim, layout: CityLayout, cid: int) -> CellDraw:
+    # per-cell RNG stream: results do not depend on which other cells are simulated
+    n = sim.duration_s
+    rng = np.random.default_rng([cfg.seed, cid])
+    group = layout.district_of_cell[cid]
+    prof = _district(cfg, group)
+    n_src = max(1, int(round(prof.n_sources * rng.uniform(0.85, 1.15))))
+    mu = np.log(prof.rate_mean_mbps) - 0.5 * prof.rate_sigma ** 2
+    rates = rng.lognormal(mu, prof.rate_sigma, n_src)
+    states = [onoff_state(rng, n, prof.on_alpha, prof.off_alpha, sim.on_min_s, sim.off_min_s) for _ in rates]
+    # surge sources: gated by the event envelope
+    mask = event_mask(sim, group, n)
+    extra_factor = max((e.extra_source_factor for e in sim.events if e.district == group), default=0.0)
+    n_extra = int(round(extra_factor * prof.n_sources))
+    extra_rates, extra_states = np.zeros(0), []
+    if n_extra and mask.any():
+        extra_rates = rng.lognormal(mu, prof.rate_sigma, n_extra)
+        extra_states = [onoff_state(rng, n, prof.on_alpha, prof.off_alpha, sim.on_min_s, sim.off_min_s) * mask
+                        for _ in extra_rates]
+    return CellDraw(cid, group, prof, rng, n_src, rates, states, extra_rates, extra_states)
+
+
+def cell_capacity(sim: Sim, prof: District, n_src: int, rng: np.random.Generator) -> float:
+    """Capacity that puts the cell's expected mean utilisation at the district's target (with per-cell jitter)."""
+    duty = pareto_mean(prof.on_alpha, sim.on_min_s) / (
+        pareto_mean(prof.on_alpha, sim.on_min_s) + pareto_mean(prof.off_alpha, sim.off_min_s))
+    expected_mean = n_src * prof.rate_mean_mbps * duty
+    return expected_mean / prof.target_mean_util * rng.lognormal(0.0, sim.capacity_jitter_sigma)
+
+
 def simulate(cfg: Config, sim: Sim | None = None, cells: list[int] | None = None) -> pl.DataFrame:
     """Return a long frame sorted by (cell_id, t) at 1 s resolution.
 
@@ -115,33 +162,18 @@ def simulate(cfg: Config, sim: Sim | None = None, cells: list[int] | None = None
     chosen = list(range(layout.n_cells)) if cells is None else cells
     frames = []
     for cid in chosen:
-        # per-cell RNG stream: results do not depend on which other cells are simulated
-        rng = np.random.default_rng([cfg.seed, cid])
-        prof = _district(cfg, layout.district_of_cell[cid])
-        n_src = max(1, int(round(prof.n_sources * rng.uniform(0.85, 1.15))))
-        mu = np.log(prof.rate_mean_mbps) - 0.5 * prof.rate_sigma ** 2
-        rates = rng.lognormal(mu, prof.rate_sigma, n_src)
+        d = draw_cell(cfg, sim, layout, cid)
+        prof, rng = d.prof, d.rng
         on_total = np.zeros(n)
         load = np.zeros(n)
-        for r in rates:
-            s = onoff_state(rng, n, prof.on_alpha, prof.off_alpha, sim.on_min_s, sim.off_min_s)
+        for r, s in zip(d.rates, d.states):
             on_total += s
             load += r * s
-        # surge sources: gated by the event envelope
-        mask = event_mask(sim, layout.district_of_cell[cid], n)
-        extra_factor = max((e.extra_source_factor for e in sim.events
-                            if e.district == layout.district_of_cell[cid]), default=0.0)
-        n_extra = int(round(extra_factor * prof.n_sources))
-        if n_extra and mask.any():
-            for r in rng.lognormal(mu, prof.rate_sigma, n_extra):
-                s = onoff_state(rng, n, prof.on_alpha, prof.off_alpha, sim.on_min_s, sim.off_min_s) * mask
-                on_total += s
-                load += r * s
+        for r, s in zip(d.extra_rates, d.extra_states):
+            on_total += s
+            load += r * s
         load = load * diurnal
-        duty = pareto_mean(prof.on_alpha, sim.on_min_s) / (
-            pareto_mean(prof.on_alpha, sim.on_min_s) + pareto_mean(prof.off_alpha, sim.off_min_s))
-        expected_mean = n_src * prof.rate_mean_mbps * duty
-        capacity = expected_mean / prof.target_mean_util * rng.lognormal(0.0, sim.capacity_jitter_sigma)
+        capacity = cell_capacity(sim, prof, d.n_src, rng)
         util = load / capacity
         rsrp = (sim.rsrp_base_dbm + rng.normal(0, 2.0)
                 + sim.rsrp_util_slope_db * np.clip(util, 0, 1.5) + rng.normal(0, sim.rsrp_noise_db, n))

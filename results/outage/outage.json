@@ -1,0 +1,349 @@
+{
+  "n_test": 120,
+  "n_dev": 40,
+  "worlds": 4,
+  "dev_worlds": 1,
+  "default_sigma": "0.5",
+  "kinds": {
+    "single": 79,
+    "pair": 30,
+    "no coverage": 11
+  },
+  "confounded": 40,
+  "absorbers": [
+    {
+      "method": "flag every neighbour",
+      "precision": 0.5152487961476726,
+      "recall": 1.0,
+      "f1": 0.6800847457627119,
+      "precision_lo": 0.47035247996079665,
+      "precision_hi": 0.552907291393335,
+      "recall_lo": 1.0,
+      "recall_hi": 1.0,
+      "f1_lo": 0.639781936940271,
+      "f1_hi": 0.7120929678998912,
+      "false_alarm_when_nobody_reconnects": 1.0
+    },
+    {
+      "method": "handover statistics only (sigma 0.5)",
+      "precision": 0.7452054794520548,
+      "recall": 0.8473520249221184,
+      "f1": 0.7930029154518949,
+      "precision_lo": 0.6840695203400121,
+      "precision_hi": 0.7962021145955012,
+      "recall_lo": 0.8052127378435519,
+      "recall_hi": 0.8872619136639925,
+      "f1_lo": 0.7523785615258036,
+      "f1_hi": 0.829389136536239,
+      "false_alarm_when_nobody_reconnects": 1.0
+    },
+    {
+      "method": "data, level counterfactual",
+      "precision": 0.806060606060606,
+      "recall": 0.4143302180685358,
+      "f1": 0.5473251028806584,
+      "precision_lo": 0.7450289511777866,
+      "precision_hi": 0.8707482993197279,
+      "recall_lo": 0.35515098557564356,
+      "recall_hi": 0.4758936366281889,
+      "f1_lo": 0.49158401749865166,
+      "f1_hi": 0.6021305996770681,
+      "false_alarm_when_nobody_reconnects": 0.18181818181818182
+    },
+    {
+      "method": "data, control counterfactual",
+      "precision": 0.8263473053892215,
+      "recall": 0.42990654205607476,
+      "f1": 0.5655737704918034,
+      "precision_lo": 0.7717075163398693,
+      "precision_hi": 0.886386075949367,
+      "recall_lo": 0.3704872986063062,
+      "recall_hi": 0.4984762370246241,
+      "f1_lo": 0.5136609143667044,
+      "f1_hi": 0.6224892051815129,
+      "false_alarm_when_nobody_reconnects": 0.18181818181818182
+    }
+  ],
+  "loss": [
+    {
+      "estimator": "assume everything is lost",
+      "loss_mae_pp": 50.31718552407639,
+      "loss_mae_pp_lo": 45.580571276864866,
+      "loss_mae_pp_hi": 54.45628469298936,
+      "rate_mae_mbps": 22.248363891999112,
+      "rate_mae_mbps_lo": 19.51534214247115,
+      "rate_mae_mbps_hi": 25.313037333440775,
+      "rate_bias_mbps": -22.248363891999112,
+      "dev_loss_mae_pp": 51.410448146704255
+    },
+    {
+      "estimator": "assume half reconnects",
+      "loss_mae_pp": 19.730608994601496,
+      "loss_mae_pp_lo": 17.375411507754198,
+      "loss_mae_pp_hi": 22.04540883100527,
+      "rate_mae_mbps": 8.495576868104711,
+      "rate_mae_mbps_lo": 7.323774755106205,
+      "rate_mae_mbps_hi": 9.798170937071797,
+      "rate_bias_mbps": -1.014435946814789,
+      "dev_loss_mae_pp": 23.58370571141508
+    },
+    {
+      "estimator": "level counterfactual, sum over neighbours",
+      "loss_mae_pp": 29.20075310619315,
+      "loss_mae_pp_lo": 25.784662366592574,
+      "loss_mae_pp_hi": 32.54608820023915,
+      "rate_mae_mbps": 16.751979624639052,
+      "rate_mae_mbps_lo": 14.582258929164684,
+      "rate_mae_mbps_hi": 19.414409089741387,
+      "rate_bias_mbps": -7.050202474378675,
+      "dev_loss_mae_pp": 30.021768626449695
+    },
+    {
+      "estimator": "control counterfactual, sum over neighbours",
+      "loss_mae_pp": 22.50421854305053,
+      "loss_mae_pp_lo": 18.9499650447672,
+      "loss_mae_pp_hi": 25.915350938793026,
+      "rate_mae_mbps": 12.147426611935206,
+      "rate_mae_mbps_lo": 10.160648087251257,
+      "rate_mae_mbps_hi": 14.121464223776687,
+      "rate_bias_mbps": 2.839987110136246,
+      "dev_loss_mae_pp": 21.996277820256758
+    },
+    {
+      "estimator": "control counterfactual, detected neighbours only",
+      "loss_mae_pp": 25.58299707642294,
+      "loss_mae_pp_lo": 21.825522495446375,
+      "loss_mae_pp_hi": 29.17285966096979,
+      "rate_mae_mbps": 10.87637502451928,
+      "rate_mae_mbps_lo": 9.197258781389987,
+      "rate_mae_mbps_hi": 12.585937375905589,
+      "rate_bias_mbps": -2.1865100969774818,
+      "dev_loss_mae_pp": 26.73206765635015
+    },
+    {
+      "estimator": "control counterfactual + handover prior (sigma 0.25)",
+      "loss_mae_pp": 20.26801671355683,
+      "loss_mae_pp_lo": 17.10228935994218,
+      "loss_mae_pp_hi": 23.52021933359169,
+      "rate_mae_mbps": 7.188608402051718,
+      "rate_mae_mbps_lo": 5.959870631127934,
+      "rate_mae_mbps_hi": 8.45450179040945,
+      "rate_bias_mbps": 1.049840586736444,
+      "dev_loss_mae_pp": 18.835558239117763
+    },
+    {
+      "estimator": "control counterfactual + handover prior (sigma 0.5)",
+      "loss_mae_pp": 21.560582161796216,
+      "loss_mae_pp_lo": 18.544431028812834,
+      "loss_mae_pp_hi": 24.64135895028855,
+      "rate_mae_mbps": 7.669009913067663,
+      "rate_mae_mbps_lo": 6.408225596911384,
+      "rate_mae_mbps_hi": 9.024321813495755,
+      "rate_bias_mbps": -0.6332025505596616,
+      "dev_loss_mae_pp": 17.065117130487334
+    },
+    {
+      "estimator": "control counterfactual + handover prior (sigma 1)",
+      "loss_mae_pp": 21.682922308883278,
+      "loss_mae_pp_lo": 18.512355744450048,
+      "loss_mae_pp_hi": 24.602809878252536,
+      "rate_mae_mbps": 8.07367882372382,
+      "rate_mae_mbps_lo": 6.617649686592703,
+      "rate_mae_mbps_hi": 9.566286348694371,
+      "rate_bias_mbps": -2.2735707627544546,
+      "dev_loss_mae_pp": 22.707073969530576
+    },
+    {
+      "estimator": "control counterfactual + handover prior (sigma 2)",
+      "loss_mae_pp": 24.375092918195605,
+      "loss_mae_pp_lo": 20.98849930816932,
+      "loss_mae_pp_hi": 27.7560588712713,
+      "rate_mae_mbps": 9.333149632469212,
+      "rate_mae_mbps_lo": 7.868095167829533,
+      "rate_mae_mbps_hi": 10.78301355112402,
+      "rate_bias_mbps": -5.892227574733419,
+      "dev_loss_mae_pp": 21.039667265060583
+    },
+    {
+      "estimator": "control + true shares as prior (upper bound)",
+      "loss_mae_pp": 19.24339807103604,
+      "loss_mae_pp_lo": 16.499170096489976,
+      "loss_mae_pp_hi": 22.31864568902932,
+      "rate_mae_mbps": 6.652542721656505,
+      "rate_mae_mbps_lo": 5.466978656701897,
+      "rate_mae_mbps_hi": 7.78884916098735,
+      "rate_bias_mbps": 1.5853378515007204,
+      "dev_loss_mae_pp": 15.721375326246756
+    }
+  ],
+  "displaced_rel_error_median": {
+    "level": 0.11427265084975063,
+    "control": 0.08526209641741621
+  },
+  "truth_summary": {
+    "mean_loss_fraction": 0.49682814475923603,
+    "mean_displaced_rate_mbps": 43.54452677441236,
+    "mean_reconnected_rate_mbps": 22.248363891999112
+  },
+  "shares": [
+    {
+      "method": "uniform over neighbours",
+      "tvd": 0.3815336352395983,
+      "tvd_lo": 0.3569693107841128,
+      "tvd_hi": 0.40537614304756964
+    },
+    {
+      "method": "data only (control counterfactual)",
+      "tvd": 0.2841905430157282,
+      "tvd_lo": 0.25265787860192374,
+      "tvd_hi": 0.3192296307804431
+    }
+  ],
+  "shares_grid": {
+    "0.25": {
+      "0": 0.2841905430157282,
+      "0.5": 0.18685335755657376,
+      "1": 0.1834170676741898
+    },
+    "0.5": {
+      "0": 0.2841905430157282,
+      "0.5": 0.1975544164669323,
+      "1": 0.2340685479733574
+    },
+    "1": {
+      "0": 0.2841905430157282,
+      "0.5": 0.23387121195260996,
+      "1": 0.29951843523179716
+    },
+    "2": {
+      "0": 0.2841905430157282,
+      "0.5": 0.26548008096932835,
+      "1": 0.4171575267103602
+    }
+  },
+  "degradation": {
+    "level": {
+      "pearson_r": 0.8283366905003572,
+      "pearson_r_lo": 0.6087757108546898,
+      "pearson_r_hi": 0.9173842305393792,
+      "mae": 0.7670603566654736,
+      "mae_if_predicting_zero": 0.9469796129309944,
+      "true_mean": 0.9469796129309944
+    },
+    "control": {
+      "pearson_r": 0.8283366905003572,
+      "pearson_r_lo": 0.6087757108546898,
+      "pearson_r_hi": 0.9173842305393792,
+      "mae": 0.7670603566654736,
+      "mae_if_predicting_zero": 0.9469796129309944,
+      "true_mean": 0.9469796129309944
+    }
+  },
+  "placebo_fpr": {
+    "level": {
+      "fpr": 0.0588437199383329,
+      "lo": 0.05704051450762537,
+      "hi": 0.06054432613738671
+    },
+    "control": {
+      "fpr": 0.0588437199383329,
+      "lo": 0.05704051450762537,
+      "hi": 0.06054432613738671
+    }
+  },
+  "alpha": 0.05,
+  "subsets": {
+    "single-cell outage": {
+      "n": 79,
+      "loss_mae_data_pp": 25.061749074539236,
+      "loss_mae_prior_pp": 24.868682385907295,
+      "absorber_f1": 0.5391849529780565
+    },
+    "two-cell (site) outage": {
+      "n": 30,
+      "loss_mae_data_pp": 18.7979278904874,
+      "loss_mae_prior_pp": 18.250310253943557,
+      "absorber_f1": 0.6227544910179641
+    },
+    "nobody can reconnect": {
+      "n": 11,
+      "loss_mae_data_pp": 14.244564687531106,
+      "loss_mae_prior_pp": 6.830422119142063,
+      "absorber_f1": 0.0
+    },
+    "outage overlaps a surge": {
+      "n": 40,
+      "loss_mae_data_pp": 28.860888859077466,
+      "loss_mae_prior_pp": 28.097731041626027,
+      "absorber_f1": 0.5444444444444444
+    },
+    "no surge overlap": {
+      "n": 80,
+      "loss_mae_data_pp": 19.325883385037063,
+      "loss_mae_prior_pp": 18.292007721881305,
+      "absorber_f1": 0.5779220779220781
+    },
+    "small outage (displaced < 31 Mbit/s)": {
+      "n": 40,
+      "loss_mae_data_pp": 26.071773539259517,
+      "loss_mae_prior_pp": 24.648561111400124,
+      "absorber_f1": 0.5401459854014599
+    },
+    "medium outage (31-45 Mbit/s)": {
+      "n": 40,
+      "loss_mae_data_pp": 22.68639942519109,
+      "loss_mae_prior_pp": 20.463930065456243,
+      "absorber_f1": 0.5170068027210885
+    },
+    "large outage (> 45 Mbit/s)": {
+      "n": 40,
+      "loss_mae_data_pp": 18.754482664700976,
+      "loss_mae_prior_pp": 19.569255308532277,
+      "absorber_f1": 0.6176470588235294
+    },
+    "short outage (< 643 s)": {
+      "n": 39,
+      "loss_mae_data_pp": 21.204679168635383,
+      "loss_mae_prior_pp": 20.241000079842582,
+      "absorber_f1": 0.5413533834586466
+    },
+    "medium-length outage (643-927 s)": {
+      "n": 41,
+      "loss_mae_data_pp": 25.29211521394722,
+      "loss_mae_prior_pp": 23.67081303801517,
+      "absorber_f1": 0.5837837837837837
+    },
+    "long outage (> 927 s)": {
+      "n": 40,
+      "loss_mae_data_pp": 20.913675345436193,
+      "loss_mae_prior_pp": 20.684188043576583,
+      "absorber_f1": 0.5647058823529412
+    }
+  },
+  "detection_power": [
+    {
+      "absorbed_mbps_from": 0.0,
+      "absorbed_mbps_to": 1.0,
+      "neighbours": 226,
+      "found": 0.06637168141592921
+    },
+    {
+      "absorbed_mbps_from": 1.0,
+      "absorbed_mbps_to": 3.0,
+      "neighbours": 120,
+      "found": 0.14166666666666666
+    },
+    {
+      "absorbed_mbps_from": 3.0,
+      "absorbed_mbps_to": 6.0,
+      "neighbours": 123,
+      "found": 0.3008130081300813
+    },
+    {
+      "absorbed_mbps_from": 6.0,
+      "absorbed_mbps_to": null,
+      "neighbours": 154,
+      "found": 0.6363636363636364
+    }
+  ]
+}

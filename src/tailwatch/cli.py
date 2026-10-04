@@ -111,6 +111,11 @@ def cmd_real_report(cfg) -> None:
     cmd_report(_real_cfg(cfg))
 
 
+def cmd_outage(cfg) -> None:
+    from . import outage_eval
+    log.info("wrote %s", outage_eval.run_and_report(cfg))
+
+
 def cmd_compare(cfg) -> None:
     from . import compare
     log.info("wrote %s", compare.write(cfg))
@@ -129,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", default=None, help="YAML config (default: $TAILWATCH_CONFIG or configs/default.yaml)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("simulate", "hurst", "experiments", "bench", "radar", "report", "all", "real-download", "real-prepare",
-                 "real-validate", "real-experiments", "real-report", "real", "compare"):
+                 "real-validate", "real-experiments", "real-report", "real", "compare", "outage"):
         sub.add_parser(name)
     w = sub.add_parser("_bench-worker")
     w.add_argument("--engine"); w.add_argument("--path"); w.add_argument("--window", type=int)
@@ -144,7 +149,8 @@ def main(argv: list[str] | None = None) -> int:
     steps = {"simulate": cmd_simulate, "hurst": cmd_hurst, "experiments": cmd_experiments, "bench": cmd_bench,
              "radar": cmd_radar, "report": cmd_report, "real-download": cmd_real_download,
              "real-prepare": cmd_real_prepare, "real-validate": cmd_real_validate,
-             "real-experiments": cmd_real_experiments, "real-report": cmd_real_report, "compare": cmd_compare}
+             "real-experiments": cmd_real_experiments, "real-report": cmd_real_report, "compare": cmd_compare,
+             "outage": cmd_outage}
     plan = {"all": ["simulate", "hurst", "experiments", "bench", "radar", "report"],
             "real": ["real-download", "real-prepare", "real-validate", "real-experiments", "real-report", "compare"]}
     for name in plan.get(args.cmd, [args.cmd]):

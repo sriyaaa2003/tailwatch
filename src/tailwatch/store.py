@@ -40,6 +40,7 @@ def read_features(cfg: Config) -> pl.DataFrame:
 
 def save_json(cfg: Config, name: str, obj) -> Path:
     path = results_dir(cfg) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, default=float), encoding="utf-8")
     return path
 

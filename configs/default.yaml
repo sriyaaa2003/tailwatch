@@ -137,3 +137,40 @@ real:
   hurst_max_scale_div: 6
   twin_few_sources: 4           # sources per cell for a testbed-sized twin (the real cell serves at most 4 UEs)
   storm_tail_labels: [dos-hulk-C, ddos-ripper-C, slowloris-C, portscan, youtube, Web Browsing, SIPP, iot]
+
+# ---------------------------------------------------------------------------------------------------------------
+# Cell-outage impact study on the digital twin (`tailwatch outage`). The twin knows, for every user, what happened,
+# so estimates of lost, rerouted and degraded traffic can be scored against exact ground truth.
+outage:
+  n_worlds: 4
+  dev_worlds: 1                   # world 0 is for choosing the method; every reported number comes from the other worlds
+  world_seed_stride: 1000
+  scenarios_per_world: 40
+  use_surge_events: true          # scripted surges stay in each world and can overlap an outage (a confounder)
+  pair_fraction: 0.3
+  no_coverage_fraction: 0.1       # outages where no user can reconnect: the estimator must not invent absorbers
+  reconnect_prob_min: 0.3
+  reconnect_prob_max: 0.9
+  start_min_s: 4200
+  end_margin_s: 600
+  duration_min_s: 300
+  duration_max_s: 1200
+  reconnect_delay_min_s: 5
+  reconnect_delay_max_s: 40
+  return_delay_max_s: 30
+  routing_concentration: 1.0
+  handover_noise_sigma: 0.5
+  alarm_start_delay_max_s: 30
+  alarm_clear_delay_max_s: 30
+  degraded_served_fraction: 0.9
+  absorber_min_share: 0.1
+  pre_window_s: 3000
+  guard_s: 60
+  control_min_hops: 2
+  control_smooth_s: 600
+  level_block_s: 60
+  alpha: 0.05
+  prior_weights: [0.0, 0.5, 1.0]
+  noise_sweep: [0.25, 0.5, 1.0, 2.0]
+  n_boot: 500
+  example_seed_index: 3

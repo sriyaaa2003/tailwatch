@@ -188,6 +188,43 @@ class Real:
 
 
 @dataclass(frozen=True)
+class Outage:
+    """Cell-outage impact study on the digital twin (known ground truth). Nothing here applies to the real trace."""
+    n_worlds: int                 # independent simulated cities (different seeds)
+    dev_worlds: int               # the first dev_worlds worlds are for choosing the method; results are reported on the rest
+    world_seed_stride: int
+    scenarios_per_world: int
+    use_surge_events: bool        # scripted surges stay in the world: a realistic confounder for the estimator
+    pair_fraction: float          # share of scenarios that take down two adjacent cells (site-level fault)
+    no_coverage_fraction: float   # share of scenarios where nobody can reconnect (no neighbouring coverage)
+    reconnect_prob_min: float     # per-scenario share of affected users that find a neighbouring cell
+    reconnect_prob_max: float
+    start_min_s: int              # earliest outage start (the estimator needs a pre-period)
+    end_margin_s: int             # an outage ends at least this long before the series does
+    duration_min_s: int
+    duration_max_s: int
+    reconnect_delay_min_s: int    # users are without service this long before they reselect a neighbour
+    reconnect_delay_max_s: int
+    return_delay_max_s: int       # users re-attach to the repaired cell up to this late
+    routing_concentration: float  # Dirichlet concentration of the true neighbour-reselection weights
+    handover_noise_sigma: float   # log-normal noise between true reselection weights and the handover statistics
+    alarm_start_delay_max_s: int  # monitoring raises the alarm up to this late
+    alarm_clear_delay_max_s: int
+    degraded_served_fraction: float  # a second is degraded when served fraction (capacity / load) is below this
+    absorber_min_share: float     # a neighbour is a "material absorber" when it takes at least this share of rerouted traffic
+    pre_window_s: int
+    guard_s: int                  # seconds before the alarm left out of the pre-period (alarm delay contamination)
+    control_min_hops: int         # control cells are at least this many hops from every failed cell
+    control_smooth_s: int
+    level_block_s: int            # pre-period level = median of block means of this length (robust to a surge in the pre-period)
+    alpha: float                  # significance level of the placebo-in-space absorber test
+    prior_weights: list[float]    # weight on the handover prior when allocating traffic (0 = data only, 1 = prior only)
+    noise_sweep: list[float]      # handover_noise_sigma values for the sensitivity table
+    n_boot: int
+    example_seed_index: int       # which scenario is drawn in the example figure
+
+
+@dataclass(frozen=True)
 class Config:
     seed: int
     paths: Paths
@@ -206,6 +243,7 @@ class Config:
     radar: Radar
     report: Report
     real: Real
+    outage: Outage
 
 
 def _build(tp: typing.Any, data: typing.Any, path: str) -> typing.Any:
@@ -287,6 +325,17 @@ def validate(cfg: Config) -> None:
     r = cfg.real
     if r.bin_s <= 0 or r.max_gap_s < r.bin_s or r.min_stream_s < 2 * r.horizon_s or r.storm_mbps <= 0:
         raise ConfigError("real: inconsistent bin/gap/stream/horizon/storm settings")
+    o = cfg.outage
+    if o.n_worlds <= o.dev_worlds or o.dev_worlds < 0 or o.scenarios_per_world < 1:
+        raise ConfigError("outage: need n_worlds > dev_worlds >= 0 and at least one scenario per world")
+    if not (0 <= o.reconnect_prob_min <= o.reconnect_prob_max <= 1):
+        raise ConfigError("outage: reconnect probabilities must satisfy 0 <= min <= max <= 1")
+    if o.start_min_s < o.pre_window_s + o.guard_s + o.alarm_start_delay_max_s:
+        raise ConfigError("outage.start_min_s must leave room for guard + pre_window")
+    if o.start_min_s + o.duration_max_s + o.end_margin_s > cfg.sim.duration_s:
+        raise ConfigError("outage: start_min_s + duration_max_s + end_margin_s exceeds sim.duration_s")
+    if not (0 < o.alpha < 0.5) or not all(0 <= w <= 1 for w in o.prior_weights):
+        raise ConfigError("outage: alpha must be in (0,0.5) and prior_weights in [0,1]")
     if cfg.radar.variant not in {"raw", "sigmoid", "isotonic"}:
         raise ConfigError("radar.variant must be raw|sigmoid|isotonic")
 

@@ -14,6 +14,9 @@ It runs on two data sets with the same code:
 * a **real 5G trace**, [msData](https://huggingface.co/datasets/subinak/Open_RAN_Performance_Measurement_Dataset_with_Traffic_and_Mobility_Labels)
   (Open RAN testbed, 3.2 M records), where whole **mobility patterns** (car, bus, train, static, pedestrian) are held out.
 
+The twin also runs **cell-outage scenarios with exact ground truth** to ask how well monitoring data can recover who was affected
+(see [Cell outages](#cell-outages-how-many-users-did-a-failed-cell-really-affect)).
+
 The headline: **the twin's main findings replicate on the real trace**, one does not, and the twin turns out to be
 less bursty than reality in a specific, measurable way. Full side-by-side table: [`results/comparison.md`](results/comparison.md).
 
@@ -67,6 +70,44 @@ Fitting the generator to this (e.g. a mix of timescales) is the obvious next ste
 `results/radar.html` is a self-contained animated hex-map radar of a surge on the twin (colour = forecast probability,
 white ring = congestion really began within the horizon). Every forecast shown is from a model that never saw that cell's district.
 
+## Cell outages: how many users did a failed cell really affect?
+
+The twin can also take cells down. `tailwatch outage` removes one cell (or two adjacent cells, a site fault) for 5 to 20
+minutes. Every affected user is either **lost** for the whole outage or **reconnects to a neighbouring cell** after a delay,
+chosen by fixed reselection weights the estimator never sees; they return to the repaired cell a little late. Because the world
+is regenerated from seeds, the counterfactual load of every cell is known exactly, so lost, rerouted and degraded traffic can be scored
+against exact ground truth (conservation of traffic is a unit test).
+
+The estimator sees only monitoring data: per-second cell load and active users, capacities, the topology, the failed cells and an
+alarm window that starts and ends late, plus optionally noisy handover statistics. Counterfactual load comes from a robust
+pre-period level scaled by an index of far-away control cells. A neighbour counts as an absorber when its excess load beats a
+**placebo-in-space** null built from the control cells over the same window. 4 simulated cities x 40 scenarios; world 0 chose the method, and
+**every number below is from the other 3 worlds (120 scenarios**: 79 single-cell, 30 two-cell, 11 where nobody can reconnect; 40 overlap a demand
+surge). Full tables: [`results/outage/summary.md`](results/outage/summary.md).
+
+![outage example](results/outage/example.png)
+
+| question | result (95% CI over scenarios) |
+|---|---|
+| How much traffic did the failed cells displace? | within a median **9%** of truth |
+| Which neighbours absorbed traffic? | data only: precision **0.83** [0.77, 0.89], recall 0.43 [0.37, 0.50]. Flagging by handover statistics alone has F1 0.79 but raises a false alarm in 100% of the outages where nobody reconnects (data only: 18%) |
+| How much traffic must a neighbour absorb to be found? | **6+ Mbit/s: 64%**, 3 to 6: 30%, 1 to 3: 14%, under 1: 7% |
+| Who took how much? (distance to true shares, 0 is perfect) | uniform 0.38, data only 0.28, data + handover statistics with moderate noise 0.19 to 0.20; statistics with noise sigma 2 and full weight are worse than data alone (0.42) |
+| Degraded performance in the neighbours | estimate correlates with truth at **r = 0.83** [0.61, 0.92] |
+| How much traffic was lost vs reconnected? | **cannot be pinned down**: loss-fraction error 22.5 pp [18.9, 25.9] from load alone, 20.3 pp with good handover statistics, even 19.2 pp when handed the true shares; always guessing 50% gives 19.7 pp [17.4, 22.0] |
+| Is the absorber test honest? | false-positive rate on control cells 0.059 [0.057, 0.061] against a nominal 0.05 |
+
+What this says about monitoring (all from the tables above, in a simulator, so treat as hypotheses to test on real outages):
+
+* **Per-second load cannot tell how many users were lost.** The neighbours' own bursts, not the baseline window, set the noise floor (baseline
+  windows of 300 to 3000 s give similar errors, 22 to 27 pp, on the development world), and longer outages did not help (21, 25, 21 pp for short, medium and long).
+  Direct counters, such as attach failures or reselection counts for the failed cell, would measure what load can only guess.
+* **Handover statistics are worth keeping when they are accurate.** They clearly improve the split of rerouted traffic for noise up to about sigma 1 (the traffic estimate moves in the same direction but within the intervals),
+  and hurt when they are very noisy and trusted fully, so validate them before leaning on them.
+* **Small absorbers are invisible at one-second load**: neighbours taking under 3 Mbit/s were found 14% of the time or less, yet several of them can still degrade.
+* **Surges confuse the estimate**: error was 28.9 pp when the outage overlapped a scripted surge against 19.3 pp otherwise, so an event calendar
+  belongs in the monitoring pipeline.
+
 ## How the real trace is used (and what it is not)
 
 msData has per-UE MAC/PHY records from one cell with up to four UEs, a mobility pattern and a traffic label per record.
@@ -95,7 +136,8 @@ UE's traffic: dos-hulk 9.9%, web browsing 7.3%, YouTube 5.9%, IoT 1.0%).
 pip install -e ".[dev]"      # add ".[duckdb]" to include DuckDB in the scale benchmark
 tailwatch all                # twin: simulate -> hurst -> experiments -> bench -> radar -> report (about 15 min)
 tailwatch real               # real trace: download (758 MB) -> prepare -> compare burstiness -> experiments -> report -> comparison (about 6 min)
-pytest                       # 17 tests, no network needed
+tailwatch outage               # cell-outage impact study on the twin (about 1 min)
+pytest                       # 36 tests, no network needed
 ```
 
 Steps run alone too: `simulate | hurst | experiments | bench | radar | report` and `real-download | real-prepare | real-validate |
@@ -112,6 +154,8 @@ src/tailwatch/
   real.py              msData download, cell-level aggregation, streams, features, twin-vs-real burstiness
   core.py              folds, resampling, calibrators, metrics, block bootstrap (shared by both data sets)
   experiments.py generalization.py probabilistic.py selection.py   the studies (shared)
+  outage_sim.py        outage scenarios with ground truth      outage_est.py   estimator (counterfactual, placebo test, GLS)
+  outage_eval.py       scoring, bootstrap CIs, figures, summary
   scale.py             Parquet engine benchmark       radar.py   twin radar
   plots.py report.py compare.py cli.py store.py
 tests/                 leakage, determinism, conformal coverage, calibration, config; real-trace aggregation and folds
@@ -133,6 +177,10 @@ docs/BLUEPRINT.md      design decisions (ADRs) and failure handling
 * **Small real groups.** The train pattern has 35 streams and 132 burst onsets; per-pattern numbers are indicative. Mobility patterns were recorded in blocks
   of time, so pattern and recording day are confounded; the stream-based validation split does not remove that.
 * **Pooled vs per-group metrics.** Pooled PR-AUC mixes groups with different rates and depends on per-group calibration maps; per-group values are in the summaries.
+* **Outages on real data.** The real trace is a single cell, so it cannot test outage impact. The outage study is simulated: the user reselection rule, the
+  handover-statistics noise, the delays and the surge overlap are my assumptions, and the simulator's average loss (50%) favours the "always guess 50%" baseline. Estimates were
+  chosen on world 0 and scored on 3 other worlds (120 scenarios) that share the same city design; no real outage data was used.
+* **Why outage estimates are noisy.** The flat error across outage lengths is consistent with long-range dependence in the traffic (the Hurst result above), but that link was not tested.
 * **Radio effects.** In the twin signal strength is a function of load plus noise; no propagation, handover or inter-cell interference.
 * **Causal claims** about features. Importances describe predictive use.
 * **Coverage guarantees.** Conformal coverage assumes exchangeability; held-out groups violate it, which the per-group coverage spread and the weak tail coverage show.

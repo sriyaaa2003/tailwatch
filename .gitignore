@@ -7,3 +7,4 @@ results/bench.log
 results/real/oof.parquet
 results/real/experiments.log
 results/twin_rerun.log
+.sim_ref_hash
