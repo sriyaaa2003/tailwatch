@@ -1,0 +1,102 @@
+{
+ "hgb_cw(repo)": {
+  "pooled": 0.12137721425564751,
+  "per_fold_mean": 0.1084857844360883,
+  "per_fold": {
+   "driving / download": 0.13305518778015568,
+   "driving / netflix": 0.13801805024319264,
+   "driving / prime": 0.19601903964465534,
+   "static / download": 0.06792984143765658,
+   "static / netflix": 0.09506435774196416,
+   "static / prime": 0.02082822976890546
+  }
+ },
+ "hgb_plain": {
+  "pooled": 0.1543395787433842,
+  "per_fold_mean": 0.12906965344619745,
+  "per_fold": {
+   "driving / download": 0.14107329111108513,
+   "driving / netflix": 0.18384632216941446,
+   "driving / prime": 0.2351919392885343,
+   "static / download": 0.09213565307947753,
+   "static / netflix": 0.10255489900630652,
+   "static / prime": 0.01961581602236663
+  }
+ },
+ "rf": {
+  "pooled": 0.13809402266142531,
+  "per_fold_mean": 0.11362418645693072,
+  "per_fold": {
+   "driving / download": 0.12982347331035285,
+   "driving / netflix": 0.14847009632959143,
+   "driving / prime": 0.23183308623267987,
+   "static / download": 0.07073556187880901,
+   "static / netflix": 0.07880271664397433,
+   "static / prime": 0.022080184346176764
+  }
+ },
+ "et_default(leaf20,mf0.5)": {
+  "pooled": 0.14000647460251103,
+  "per_fold_mean": 0.12268499604655397,
+  "per_fold": {
+   "driving / download": 0.13247261807947164,
+   "driving / netflix": 0.16532232494124566,
+   "driving / prime": 0.24792141198419548,
+   "static / download": 0.08335146206869457,
+   "static / netflix": 0.08482175599402283,
+   "static / prime": 0.02222040321169366
+  }
+ },
+ "et_nested_selected": {
+  "pooled": 0.14093663546181454,
+  "per_fold_mean": 0.12552881562224757,
+  "per_fold": {
+   "driving / download": 0.13072072285037062,
+   "driving / netflix": 0.17849500461122084,
+   "driving / prime": 0.25074010159784604,
+   "static / download": 0.0818527884555331,
+   "static / netflix": 0.08815934276235683,
+   "static / prime": 0.023204933456157942
+  }
+ },
+ "ens(et_nested,hgb_plain)": {
+  "pooled": 0.11719927058730745,
+  "per_fold_mean": 0.13162137315308123,
+  "per_fold": {
+   "driving / download": 0.13542319358747323,
+   "driving / netflix": 0.1899977067712941,
+   "driving / prime": 0.25432781957871947,
+   "static / download": 0.08962966597483336,
+   "static / netflix": 0.09807570236167289,
+   "static / prime": 0.022274150644494208
+  }
+ },
+ "ens(et_nested,hgb_plain,rf)": {
+  "pooled": 0.1167572442156202,
+  "per_fold_mean": 0.1281706939926027,
+  "per_fold": {
+   "driving / download": 0.13497604216475345,
+   "driving / netflix": 0.18177154341776133,
+   "driving / prime": 0.2511899111723949,
+   "static / download": 0.08839850509612207,
+   "static / netflix": 0.09188150346468243,
+   "static / prime": 0.02080665863990199
+  }
+ },
+ "diff_et_nested_minus_repo": {
+  "point": 0.01955942120616702,
+  "ci95": [
+   0.009974735899607524,
+   0.030043482028806235
+  ]
+ },
+ "chosen": {
+  "driving / download": "et_leaf60_mf0.3",
+  "driving / netflix": "et_leaf60_mf0.3",
+  "driving / prime": "et_leaf20_mf0.3",
+  "static / download": "et_leaf60_mf0.3",
+  "static / netflix": "et_leaf20_mf0.3",
+  "static / prime": "et_leaf60_mf0.3"
+ },
+ "prevalence": 0.037675446139192784
+}
