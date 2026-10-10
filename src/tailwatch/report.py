@@ -10,29 +10,16 @@ def ci(r: dict, key: str, nd: int = 3) -> str:
 
 
 def _data_section(cfg: Config, ds: dict, a) -> None:
-    if cfg.report.kind == "real":
-        _data_real(cfg, ds, a)
-        return
-    hu = load_json(cfg, "hurst.json")
-    a("## Data (synthetic digital twin)\n")
-    a(f"{ds['raw_rows']:,} one-second cell observations -> {ds['feature_rows']:,} decision points (stride {cfg.features.stride_s} s, "
-      f"already-congested rows removed). Storm = congestion (utilisation >= {cfg.storm.utilisation_threshold}) begins within "
-      f"{cfg.storm.horizon_s} s. **Storm rate {100 * ds['storm_rate']:.1f}%** ({ds['storm_count']:,} events).\n")
-    a("| district | decision points | storm rate |\n|---|---|---|")
-    for d in ds["by_group"]:
-        a(f"| {d['group']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
-    a("\nGenerator check (aggregated-variance Hurst exponent on load with surges and diurnal cycle switched off; "
-      f"iid-noise reference H = {hu['H_iid_reference']:.2f}):\n")
-    a("| cell | district | H measured | H theory (3-alpha_min)/2 |\n|---|---|---|---|")
-    for r in hu["cells"]:
-        a(f"| {r['cell_id']} | {r['district']} | {r['H_measured']:.2f} | {r['H_theory']:.2f} |")
+    if cfg.report.kind == "fiveg":
+        _data_fiveg(cfg, ds, a)
+    else:
+        _data_msdata(cfg, ds, a)
 
 
-
-def _data_real(cfg: Config, ds: dict, a) -> None:
+def _data_msdata(cfg: Config, ds: dict, a) -> None:
     r = cfg.real
     cad = ds["record_cadence"]
-    a("## Data (msData real trace, Open RAN 5G testbed)\n")
+    a("## Data (msData, Open RAN 5G testbed)\n")
     a(f"{ds['raw_rows']:,} per-UE records (median spacing {cad['median_ms']:.0f} ms, 5th-95th percentile {cad['p05_ms']:.0f}-{cad['p95_ms']:.0f} ms; "
       f"not 1 ms samples) -> cell-level load in {r.bin_s:g} s bins (sum of all UEs' downlink rate), {ds['streams']} contiguous streams "
       f"(silences over {r.max_gap_s:g} s split a stream, streams under {r.min_stream_s} s dropped), {ds['stream_seconds'] / 3600:.1f} h of cell time, "
@@ -46,18 +33,29 @@ def _data_real(cfg: Config, ds: dict, a) -> None:
     a("| heaviest UE's traffic | decision points | burst rate |\n|---|---|---|")
     for d in ds["by_top_label"]:
         a(f"| {d['top_label']} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
-    b = load_json(cfg, "burstiness.json")
-    a("\n### Is the twin's traffic shaped like the real trace?\n")
-    a(f"Same estimator and series length for all rows ({b['chunk_len_s']:.0f} s; real streams of at least {b['min_stream_s']} s). "
-      f"Median [IQR]; iid-noise Hurst reference {b['iid_reference_H']:.2f}.\n")
-    a("| series | n | Hurst H | CV (std/mean) | autocorr lag 1 s | autocorr lag 10 s |\n|---|---|---|---|---|---|")
-    rows = [("real trace", b["real"]), ("twin as published (45-70 sources/cell)", b["twin"]),
-            (f"twin with {b['twin_few_sources']['sources_per_cell']} sources/cell", b["twin_few_sources"])]
+    try:
+        b = load_json(cfg, "burstiness.json")
+    except FileNotFoundError:
+        return
+    a("\n### Burstiness of the cell load\n")
+    a(f"Streams of at least {b['min_stream_s']} s. Median [IQR]; iid-noise Hurst reference {b['iid_reference_H']:.2f}.\n")
+    a("| streams | n | Hurst H | CV (std/mean) | autocorr lag 1 s | autocorr lag 10 s |\n|---|---|---|---|---|---|")
+    rows = [("all", b["all"])] + list(b["by_group"].items())
     for name, v in rows:
-        f = lambda k: f"{v[k]['median']:.2f} [{v[k]['q25']:.2f}, {v[k]['q75']:.2f}]"
+        f = lambda k: f"{v[k]['median']:.2f} [{v[k]['q25']:.2f}, {v[k]['q75']:.2f}]" if v[k] else "n/a"
         a(f"| {name} | {v['n']} | {f('H')} | {f('cv')} | {f('acf1')} | {f('acf10')} |")
-    a("\nReal Hurst by mobility pattern (median, n streams): " + ", ".join(
-        f"{g} {v['H']['median']:.2f} (n={v['n']})" for g, v in b["real_by_group"].items()) + ".")
+
+
+def _data_fiveg(cfg: Config, ds: dict, a) -> None:
+    f = cfg.fiveg
+    a("## Data (client-side 5G production traces, Irish operator)\n")
+    a(f"{ds['streams']} streams, {ds['stream_seconds']:,} s ({ds['stream_seconds'] / 3600:.1f} h) of 1 Hz phone KPIs, {100 * ds['share_5g']:.0f}% of seconds on 5G, "
+      f"{ds['feature_rows']:,} decision points (stride {f.stride_s} s, channel currently good: CQI >= {ds['cqi_now_min']}). "
+      f"**Channel collapse** = the worst CQI in the next {ds['horizon_s']} s is <= {ds['cqi_event_max']}. "
+      f"**Collapse rate {100 * ds['storm_rate']:.1f}%** ({ds['storm_count']:,} events).\n")
+    a("| mobility / app | streams | seconds | decision points | collapse rate |\n|---|---|---|---|---|")
+    for d in ds["by_group"]:
+        a(f"| {d['group']} | {d['streams']} | {d['seconds']:,} | {d['rows']:,} | {100 * d['storm_rate']:.1f}% |")
 
 
 def write(cfg: Config) -> str:
@@ -124,26 +122,6 @@ def write(cfg: Config) -> str:
     top = next((r for r in sel["rows"] if r["method"] == "tree" and r["features"]), None)
     if top:
         a(f"\nFeatures chosen by tree importance in every fold at k={top['k']}: {', '.join(top['features'])}.")
-
-    try:
-        b = load_json(cfg, "bench.json")
-    except FileNotFoundError:
-        b = None
-    if b:
-        a("\n## 7. Scale (Parquet, rolling-window feature job)\n")
-        a("| engine | scale | rows | status | wall s | peak MB |\n|---|---|---|---|---|---|")
-        for r in b["runs"]:
-            ok = r["status"] == "ok"
-            a(f"| {r['engine']} | {r['multiplier']}x | {r['rows']:,} | {r['status']} | "
-              f"{r['seconds']:.2f} ({r['seconds_min']:.2f}-{r['seconds_max']:.2f}) | {r['peak_mb']:.0f} |" if ok else f"| {r['engine']} | {r['multiplier']}x | {r['rows']:,} | {r['status']} | | |")
-        a("\n| scale | rows | Parquet (zstd) MB | bytes/row |\n|---|---|---|---|")
-        for m, d in b["datasets"].items():
-            a(f"| {m}x | {d['rows']:,} | {d['parquet_bytes'] / 2**20:.1f} | {d['parquet_bytes'] / d['rows']:.1f} |")
-        d1 = b["datasets"]["1"]
-        a(f"\n1x as CSV: {d1['csv_bytes'] / 2**20:.1f} MB; Parquet: {d1['parquet_bytes'] / 2**20:.1f} MB "
-          f"({d1['csv_bytes'] / d1['parquet_bytes']:.1f}x smaller); in-memory Arrow: {d1['in_memory_bytes'] / 2**20:.1f} MB.")
-        if b.get("agreement"):
-            a("\nCross-engine agreement on identical job output: " + ", ".join(f"{k}x {'yes' if v else 'NO'}" for k, v in b["agreement"].items()) + ".")
 
     path = results_dir(cfg) / "summary.md"
     path.write_text("\n".join(L) + "\n", encoding="utf-8")

@@ -1,0 +1,146 @@
+{
+  "none|driving / download": {
+    "prevalence": 0.0772103239978034,
+    "raw": 0.14161221984821173,
+    "sigmoid": 0.14161221984821173,
+    "isotonic": 0.1276333497754771
+  },
+  "none|driving / netflix": {
+    "prevalence": 0.05172531137276254,
+    "raw": 0.1636445744266193,
+    "sigmoid": 0.1636445744266193,
+    "isotonic": 0.14523216011305334
+  },
+  "none|driving / prime": {
+    "prevalence": 0.05936664776868875,
+    "raw": 0.20249560405314984,
+    "sigmoid": 0.20249560405314984,
+    "isotonic": 0.18425451274411336
+  },
+  "none|static / download": {
+    "prevalence": 0.021614035087719297,
+    "raw": 0.06901490664717809,
+    "sigmoid": 0.06901490664717809,
+    "isotonic": 0.05503406926154339
+  },
+  "none|static / netflix": {
+    "prevalence": 0.02314015334668785,
+    "raw": 0.08595918289236122,
+    "sigmoid": 0.08595918289236122,
+    "isotonic": 0.08029159773243254
+  },
+  "none|static / prime": {
+    "prevalence": 0.009133699428443349,
+    "raw": 0.01590199198672782,
+    "sigmoid": 0.01590199198672782,
+    "isotonic": 0.014937965088191335
+  },
+  "class_weight|driving / download": {
+    "prevalence": 0.0772103239978034,
+    "raw": 0.13305518778015568,
+    "sigmoid": 0.13305518778015568,
+    "isotonic": 0.12128464428898826
+  },
+  "class_weight|driving / netflix": {
+    "prevalence": 0.05172531137276254,
+    "raw": 0.13801805024319264,
+    "sigmoid": 0.13801805024319264,
+    "isotonic": 0.12449450311872004
+  },
+  "class_weight|driving / prime": {
+    "prevalence": 0.05936664776868875,
+    "raw": 0.19601903964465534,
+    "sigmoid": 0.19601903964465534,
+    "isotonic": 0.17886408808775603
+  },
+  "class_weight|static / download": {
+    "prevalence": 0.021614035087719297,
+    "raw": 0.06792984143765658,
+    "sigmoid": 0.06792984143765658,
+    "isotonic": 0.05346290477490227
+  },
+  "class_weight|static / netflix": {
+    "prevalence": 0.02314015334668785,
+    "raw": 0.09506435774196416,
+    "sigmoid": 0.09506435774196416,
+    "isotonic": 0.08061086877352835
+  },
+  "class_weight|static / prime": {
+    "prevalence": 0.009133699428443349,
+    "raw": 0.02082822976890546,
+    "sigmoid": 0.02082822976890546,
+    "isotonic": 0.01882313185087048
+  },
+  "smote|driving / download": {
+    "prevalence": 0.0772103239978034,
+    "raw": 0.13692168375606706,
+    "sigmoid": 0.13692168375606706,
+    "isotonic": 0.13052663366700099
+  },
+  "smote|driving / netflix": {
+    "prevalence": 0.05172531137276254,
+    "raw": 0.15271169700986395,
+    "sigmoid": 0.15271169700986395,
+    "isotonic": 0.13952223279773965
+  },
+  "smote|driving / prime": {
+    "prevalence": 0.05936664776868875,
+    "raw": 0.18955020246451246,
+    "sigmoid": 0.18955020246451246,
+    "isotonic": 0.17623504515397362
+  },
+  "smote|static / download": {
+    "prevalence": 0.021614035087719297,
+    "raw": 0.04672852118960188,
+    "sigmoid": 0.04672852118960188,
+    "isotonic": 0.031245993069645393
+  },
+  "smote|static / netflix": {
+    "prevalence": 0.02314015334668785,
+    "raw": 0.09491583352402111,
+    "sigmoid": 0.09491583352402111,
+    "isotonic": 0.08414937224815953
+  },
+  "smote|static / prime": {
+    "prevalence": 0.009133699428443349,
+    "raw": 0.01847668947226165,
+    "sigmoid": 0.01847668947226165,
+    "isotonic": 0.016392224785189806
+  },
+  "undersample|driving / download": {
+    "prevalence": 0.0772103239978034,
+    "raw": 0.13540855878198443,
+    "sigmoid": 0.13540855878198443,
+    "isotonic": 0.1259740484002295
+  },
+  "undersample|driving / netflix": {
+    "prevalence": 0.05172531137276254,
+    "raw": 0.16492225300386018,
+    "sigmoid": 0.16492225300386018,
+    "isotonic": 0.15152430985398113
+  },
+  "undersample|driving / prime": {
+    "prevalence": 0.05936664776868875,
+    "raw": 0.23162335834338518,
+    "sigmoid": 0.23162335834338518,
+    "isotonic": 0.2046592890605267
+  },
+  "undersample|static / download": {
+    "prevalence": 0.021614035087719297,
+    "raw": 0.07285394614908156,
+    "sigmoid": 0.07285394614908156,
+    "isotonic": 0.05586044602093872
+  },
+  "undersample|static / netflix": {
+    "prevalence": 0.02314015334668785,
+    "raw": 0.09573053205496657,
+    "sigmoid": 0.09573053205496657,
+    "isotonic": 0.08460363835330179
+  },
+  "undersample|static / prime": {
+    "prevalence": 0.009133699428443349,
+    "raw": 0.02642101258342061,
+    "sigmoid": 0.02642101258342061,
+    "isotonic": 0.02124192716640761
+  }
+}

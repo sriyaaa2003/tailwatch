@@ -1,8 +1,8 @@
-"""results/comparison.md: do the twin's findings hold on the real trace? Every number is read from the two result sets."""
+"""results/comparison.md: do the findings on one real data set hold on the other? Every number is read from the two result sets."""
 from __future__ import annotations
 
 from .config import Config
-from .real import derive_config
+from . import fiveg, real
 from .store import load_json, results_dir
 
 
@@ -20,15 +20,15 @@ def _load(cfg: Config) -> dict:
 
 
 def write(cfg: Config) -> str:
-    rcfg = derive_config(cfg)
-    sets = [("digital twin", cfg, _load(cfg)), ("real trace (msData)", rcfg, _load(rcfg))]
+    mcfg, fcfg = real.derive_config(cfg), fiveg.derive_config(cfg)
+    sets = [("msData (Open RAN testbed)", mcfg, _load(mcfg)), ("client-side 5G traces", fcfg, _load(fcfg))]
     strat = cfg.model.default_strategy
     L: list[str] = []
     a = L.append
-    a("# Twin vs real trace\n")
-    a("Same code, same estimators; each column is its own data set and its own held-out groups (districts for the twin, "
-      "mobility patterns for the real trace). Intervals are 95% block-bootstrap CIs. The two columns are different systems, "
-      "so compare *patterns*, not absolute levels.\n")
+    a("# msData vs client-side 5G traces\n")
+    a("Same code, same estimators; each column is its own data set, its own rare event and its own held-out groups (mobility "
+      "patterns for msData, mobility / app pairs for the 5G traces). Intervals are 95% block-bootstrap CIs. The two columns "
+      "are different systems and different events, so compare *patterns*, not absolute levels.\n")
     a("| | " + " | ".join(n for n, _, _ in sets) + " |")
     a("|---|" + "---|" * len(sets))
 

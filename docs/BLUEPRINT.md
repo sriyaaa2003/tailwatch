@@ -1,3 +1,5 @@
+> **Historical design record.** This document describes the first version, which also used a synthetic city simulator and cell-outage studies on it. Those were removed: tailwatch now runs only on the two real data sets described in the README.
+
 # tailwatch blueprint (condensed)
 
 Written against the `project-blueprint` rules. Sections that do not apply to an offline research pipeline (auth, APIs,

@@ -1,43 +1,15 @@
 # tailwatch default configuration. Every tunable in the project lives here.
 # Loaded and type-validated by tailwatch.config.load_config(); changing a value needs no code change.
+# Two real data sets share one pipeline: msData (Open RAN testbed) and client-side 5G production traces.
 seed: 7
+duration_s: 1                  # time-axis length of the data set in use; each data set's derive step overwrites it
 
 paths:
   data_dir: data
   results_dir: results
 
-city:
-  grid_rows: 6
-  grid_cols: 8
-  # Districts are vertical column bands [col_start, col_end). Profiles differ on purpose so that
-  # leave-one-district-out generalisation is a real test and not a relabelling of one distribution.
-  districts:
-    - {name: residential, col_start: 0, col_end: 2, n_sources: 55, rate_mean_mbps: 2.0, rate_sigma: 0.8, on_alpha: 1.5, off_alpha: 1.3, target_mean_util: 0.42}
-    - {name: business,    col_start: 2, col_end: 4, n_sources: 70, rate_mean_mbps: 3.0, rate_sigma: 0.6, on_alpha: 1.6, off_alpha: 1.4, target_mean_util: 0.45}
-    - {name: leisure,     col_start: 4, col_end: 6, n_sources: 45, rate_mean_mbps: 4.0, rate_sigma: 1.0, on_alpha: 1.3, off_alpha: 1.2, target_mean_util: 0.40}
-    - {name: transit,     col_start: 6, col_end: 8, n_sources: 60, rate_mean_mbps: 2.5, rate_sigma: 0.9, on_alpha: 1.4, off_alpha: 1.25, target_mean_util: 0.43}
-
-sim:
-  duration_s: 14400
-  on_min_s: 2.0
-  off_min_s: 6.0
-  capacity_jitter_sigma: 0.10
-  diurnal_amplitude: 0.15
-  diurnal_period_s: 14400
-  rsrp_base_dbm: -82.0
-  rsrp_util_slope_db: -28.0
-  rsrp_noise_db: 1.5
-  # Scripted demand surges (stadium letting out, train arrival). The surge adds `extra_source_factor` x n_sources
-  # extra ON/OFF sources to the district's cells, ramped in and out linearly.
-  events:
-    - {district: leisure,     start_s: 3000, duration_s: 900, ramp_s: 240, extra_source_factor: 0.55}
-    - {district: transit,     start_s: 6200, duration_s: 600, ramp_s: 120, extra_source_factor: 0.60}
-    - {district: business,    start_s: 9000, duration_s: 1200, ramp_s: 300, extra_source_factor: 0.40}
-    - {district: residential, start_s: 11800, duration_s: 900, ramp_s: 240, extra_source_factor: 0.50}
-    - {district: leisure,     start_s: 12600, duration_s: 600, ramp_s: 120, extra_source_factor: 0.45}
-
 storm:
-  utilisation_threshold: 1.1   # demand/capacity at or above which a cell is congested (1.1 = demand 10% over capacity)
+  utilisation_threshold: 1.0   # event level in the data set's own units; each derive step rescales to this
   horizon_s: 30                 # a "storm" label = onset of congestion within the next horizon_s seconds
   # Rows already congested are excluded: the task is forecasting onset, not persistence.
 
@@ -56,7 +28,7 @@ model:
   purge_s: 120                  # gap between train and val to stop window overlap leaking
   strategies: [none, class_weight, smote, undersample]
   default_strategy: class_weight
-  val_mode: time                # twin: validation = last val_fraction of time inside training districts
+  val_mode: stream              # validation = every k-th stream inside the training groups (k = 1/val_fraction)
 
 eval:
   n_boot: 300
@@ -81,45 +53,24 @@ policy:
 generalization:
   random_test_fraction: 0.3
   temporal_test_fraction: 0.3
-  protocols: [random, temporal, unseen, unseen_future]
-
-hurst:
-  validate_cells: 6
-  min_scale_s: 8
-  max_scale_div: 8
-
-scale:
-  multipliers: [1, 10, 100]
-  base_cells: 48
-  base_duration_s: 3600
-  window_s: 30
-  engines: [pandas, polars, duckdb]
-  timeout_s: 600           # per run; a run that exceeds it is recorded as a timeout
-  repeats: 3               # each timing is the median of this many warm runs
-
-radar:
-  strategy: class_weight
-  variant: isotonic
-  lead_s: 300
-  window_s: 1200
-  event_index: 0
+  protocols: [random, unseen]
 
 report:
-  group_label: district
-  kind: twin
-  event_label: storm
-  peak_label: peak utilisation
+  group_label: mobility pattern
+  kind: msdata
+  event_label: burst
+  peak_label: peak load relative to the configured high-load level
 
 # ---------------------------------------------------------------------------------------------------------------
-# Real-trace study on msData (Open RAN 5G testbed, OpenIreland). Run with `tailwatch real`.
+# msData study (Open RAN 5G testbed, OpenIreland). Run with `tailwatch run msdata`.
 # Source: https://huggingface.co/datasets/subinak/Open_RAN_Performance_Measurement_Dataset_with_Traffic_and_Mobility_Labels
 # Licence: MIT on the dataset card, CC BY 4.0 in the msData paper (arXiv 2603.16497); both require attribution, see README.
 real:
   url: https://huggingface.co/datasets/subinak/Open_RAN_Performance_Measurement_Dataset_with_Traffic_and_Mobility_Labels/resolve/main/5G_millisecond.csv
   expected_bytes: 794453804
   filename: 5G_millisecond.csv
-  data_dir: data/real
-  results_dir: results/real
+  data_dir: data/msdata
+  results_dir: results/msdata
   group_col: mob_pattern        # car / bus / train / static / pedestrian are held out as whole groups
   timestamp_ticks_per_s: 100000 # 10 microsecond ticks: epoch seconds x 1e5 (inferred, not documented)
   bin_s: 1.0
@@ -135,42 +86,24 @@ real:
   hurst_min_stream_s: 300
   hurst_min_scale_s: 4
   hurst_max_scale_div: 6
-  twin_few_sources: 4           # sources per cell for a testbed-sized twin (the real cell serves at most 4 UEs)
   storm_tail_labels: [dos-hulk-C, ddos-ripper-C, slowloris-C, portscan, youtube, Web Browsing, SIPP, iot]
 
 # ---------------------------------------------------------------------------------------------------------------
-# Cell-outage impact study on the digital twin (`tailwatch outage`). The twin knows, for every user, what happened,
-# so estimates of lost, rerouted and degraded traffic can be scored against exact ground truth.
-outage:
-  n_worlds: 4
-  dev_worlds: 1                   # world 0 is for choosing the method; every reported number comes from the other worlds
-  world_seed_stride: 1000
-  scenarios_per_world: 40
-  use_surge_events: true          # scripted surges stay in each world and can overlap an outage (a confounder)
-  pair_fraction: 0.3
-  no_coverage_fraction: 0.1       # outages where no user can reconnect: the estimator must not invent absorbers
-  reconnect_prob_min: 0.3
-  reconnect_prob_max: 0.9
-  start_min_s: 4200
-  end_margin_s: 600
-  duration_min_s: 300
-  duration_max_s: 1200
-  reconnect_delay_min_s: 5
-  reconnect_delay_max_s: 40
-  return_delay_max_s: 30
-  routing_concentration: 1.0
-  handover_noise_sigma: 0.5
-  alarm_start_delay_max_s: 30
-  alarm_clear_delay_max_s: 30
-  degraded_served_fraction: 0.9
-  absorber_min_share: 0.1
-  pre_window_s: 3000
-  guard_s: 60
-  control_min_hops: 2
-  control_smooth_s: 600
-  level_block_s: 60
-  alpha: 0.05
-  prior_weights: [0.0, 0.5, 1.0]
-  noise_sweep: [0.25, 0.5, 1.0, 2.0]
-  n_boot: 500
-  example_seed_index: 3
+# Client-side 5G production traces (Irish operator, Raca et al., MMSys 2020), 83 sessions, 1 Hz. Run with `tailwatch run fiveg`.
+# Source: https://github.com/uccmisl/5Gdataset (licence on the repository). Event: the channel (CQI) collapses within the horizon.
+fiveg:
+  url: https://github.com/uccmisl/5Gdataset/raw/master/5G-production-dataset.zip
+  expected_bytes: 2177094
+  filename: 5G-production-dataset.zip
+  data_dir: data/fiveg
+  results_dir: results/fiveg
+  max_gap_s: 3
+  min_stream_s: 60
+  cqi_now_min: 9                # only decision points whose channel is currently good (CQI >= 9) are scored
+  cqi_event_max: 5              # event: worst CQI over the next horizon is <= 5
+  horizon_s: 10
+  windows_s: [5, 15, 30]
+  stride_s: 2
+  n_boot: 200
+  block_s: 60
+  dl_kbps_per_mbps: 1000.0

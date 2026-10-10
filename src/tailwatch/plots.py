@@ -96,20 +96,6 @@ def intervals(cfg: Config) -> None:
     _save(fig, cfg, "intervals")
 
 
-def scale(cfg: Config) -> None:
-    b = load_json(cfg, "bench.json")["runs"]
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
-    for engine in sorted({r["engine"] for r in b}):
-        rs = [r for r in b if r["engine"] == engine and r["status"] == "ok"]
-        if not rs:
-            continue
-        axes[0].plot([r["rows"] for r in rs], [r["seconds"] for r in rs], "o-", label=engine)
-        axes[1].plot([r["rows"] for r in rs], [r["peak_mb"] for r in rs], "o-", label=engine)
-    for ax, lab in zip(axes, ("wall time (s)", "peak memory (MB)")):
-        ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlabel("rows"); ax.set_ylabel(lab); ax.legend()
-    _save(fig, cfg, "scale")
-
-
 def imbalance(cfg: Config) -> None:
     rows = load_json(cfg, "imbalance.json")
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.6))
@@ -124,7 +110,3 @@ def imbalance(cfg: Config) -> None:
 def make_all(cfg: Config) -> None:
     for fn in (reliability, cost_curves, generalization, selection, intervals, imbalance):
         fn(cfg)
-    try:
-        scale(cfg)
-    except FileNotFoundError:
-        pass

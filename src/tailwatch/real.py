@@ -1,13 +1,13 @@
-"""Real-trace study on msData (Open RAN 5G testbed, OpenIreland; 3.2 M records, one cell, 4 UEs).
+"""msData study (Open RAN 5G testbed, OpenIreland (3.2 M records, one cell, 4 UEs).
 
 What the raw data is: per-UE records of MAC/PHY metrics, one record per ~90 TTIs (about 155 ms of wall clock apart),
 not 1 ms samples, plus a mobility pattern and a traffic label per record. There is no per-cell load column and the
 cell's capacity is not observed. This module therefore builds a **cell-level load** by summing the downlink bit rate of
-all UEs seen in the same time bin, cuts it into contiguous streams, and asks the same question as the twin: will
+all UEs seen in the same time bin, cuts it into contiguous streams, and asks: will
 the load reach a configured high-load level within the next few seconds? The configured level is a labelling
 convention (cfg.real.storm_mbps), not a measured congestion point.
 
-The mobility pattern (car / bus / train / static / pedestrian) plays the part of the district: it is held out whole.
+The mobility pattern (car / bus / train / static / pedestrian) is the group that is held out whole.
 The traffic label is never a model input (a deployed forecaster would not have it); it is used only in descriptive
 tables.
 """
@@ -35,20 +35,20 @@ RAW_SCHEMA = {"timestamp": pl.Float64, "mob_pattern": pl.String, "label": pl.Str
 
 # ----------------------------------------------------------------------------------------------------- configuration
 def derive_config(cfg: Config, df: pl.DataFrame | None = None) -> Config:
-    """The shared pipeline reads everything from a Config; the real study is the same Config with the real-data
+    """The shared pipeline reads everything from a Config; each data set is the same Config with its own
     settings swapped in (paths, storm level, horizon, windows, stream-based validation, group label)."""
     r = cfg.real
-    t_end = int(df["t"].max()) + 1 if df is not None else cfg.sim.duration_s
+    t_end = int(df["t"].max()) + 1 if df is not None else cfg.duration_s
     return dataclasses.replace(
         cfg,
         paths=Paths(data_dir=r.data_dir, results_dir=r.results_dir),
-        sim=dataclasses.replace(cfg.sim, duration_s=t_end),
+        duration_s=t_end,
         storm=Storm(utilisation_threshold=1.0, horizon_s=r.horizon_s),   # util is load / storm_mbps
         features=Features(windows_s=r.windows_s, stride_s=r.stride_s),
         model=dataclasses.replace(cfg.model, val_mode="stream", purge_s=0),
         eval=dataclasses.replace(cfg.eval, n_boot=r.n_boot, block_s=r.block_s),
         generalization=dataclasses.replace(cfg.generalization, protocols=["random", "unseen"]),
-        report=Report(group_label="mobility pattern", kind="real", event_label="burst",
+        report=Report(group_label="mobility pattern", kind="msdata", event_label="burst",
                       peak_label="peak load relative to the configured high-load level"),
     )
 
@@ -147,7 +147,7 @@ def real_feature_names(cfg: Config) -> list[str]:
 
 
 def build_real_features(s: pl.DataFrame, cfg: Config) -> pl.DataFrame:
-    """Same construction as the twin: trailing windows for features, strictly forward window for the label.
+    """Trailing windows for features, strictly forward window for the label.
     Windows and horizon are in seconds in the config and converted to bins here."""
     r = cfg.real
     to_bins = lambda sec: max(1, int(round(sec / r.bin_s)))
@@ -172,7 +172,7 @@ def build_real_features(s: pl.DataFrame, cfg: Config) -> pl.DataFrame:
             pl.col("sinr").rolling_mean(w).over("cell_id").alias(f"sinr_mean_{sec}"),
         ]
     fut = u.reverse().rolling_max(H).reverse().shift(-1).over("cell_id").alias("y_fut_max")
-    out = df.select("cell_id", "t", "group", "top_label", *exprs, fut)
+    out = df.select("cell_id", "t", "group", "top_label", u.alias("level_now"), *exprs, fut)
     for sec in cfg.features.windows_s:
         out = out.with_columns((pl.col(f"util_std_{sec}") / (pl.col(f"util_mean_{sec}").abs() + 1e-6)).alias(f"util_cv_{sec}"))
     thr = cfg.storm.utilisation_threshold
@@ -181,7 +181,7 @@ def build_real_features(s: pl.DataFrame, cfg: Config) -> pl.DataFrame:
     out = (out.filter((pl.col("t") % stride == 0) & (pl.col("util_now") < thr))
            .drop_nulls(cols + ["y_fut_max"])
            .with_columns(pl.col(cols).cast(pl.Float32)))
-    return out.select(["cell_id", "t", "group", "top_label", *cols, "y_fut_max", "y"])
+    return out.select(["cell_id", "t", "group", "top_label", "level_now", *cols, "y_fut_max", "y"])
 
 
 # ----------------------------------------------------------------------------------------------------- summaries
@@ -214,7 +214,7 @@ def summarise(raw: pl.DataFrame, s: pl.DataFrame, feats: pl.DataFrame, cfg: Conf
     }
 
 
-# ----------------------------------------------------------------------------------------------------- twin vs real
+# ----------------------------------------------------------------------------------------------------- burstiness
 def _acf(x: np.ndarray, lag: int) -> float:
     x = x - x.mean()
     den = float((x * x).sum())
@@ -237,45 +237,19 @@ def _summ(rows: list[dict]) -> dict:
     return out
 
 
-def compare_burstiness(s: pl.DataFrame, cfg: Config) -> dict:
-    """Does the twin's traffic look like the real trace? Same statistics, same estimator, same series length.
-
-    Real: every stream of at least hurst_min_stream_s seconds. Twin: the plain generator (surges and diurnal cycle off)
-    cut into non-overlapping chunks as long as the median real stream, so the Hurst estimator's finite-length bias
-    is matched. Differences in level are expected (different system); the question is whether the *shape* agrees."""
-    from .sim import simulate
+def burstiness(s: pl.DataFrame, cfg: Config) -> dict:
+    """Self-similarity, variability and short-lag autocorrelation of the cell load, per stream of at least
+    hurst_min_stream_s seconds (the aggregated-variance Hurst estimator needs long series)."""
     min_len = int(round(cfg.real.hurst_min_stream_s / cfg.real.bin_s))
-    real_rows, lens = [], []
-    for cid, g in s.group_by("cell_id", maintain_order=True):
+    rows = []
+    for _, g in s.group_by("cell_id", maintain_order=True):
         if g.height < min_len:
             continue
         st = burst_stats(g["load"].to_numpy().astype(float), cfg)
         if st:
-            st.update({"group": g["group"][0], "len": g.height})
-            real_rows.append(st)
-            lens.append(g.height)
-    L = int(np.median(lens)) if lens else min_len
-    plain = dataclasses.replace(cfg.sim, events=[], diurnal_amplitude=0.0)
-
-    def twin_chunks(c: Config) -> list[dict]:
-        rows = []
-        for _, g in simulate(c, sim=plain).group_by("cell_id", maintain_order=True):
-            x = g["load_mbps"].to_numpy().astype(float)
-            for i in range(len(x) // L):
-                st = burst_stats(x[i * L:(i + 1) * L], cfg)
-                if st:
-                    rows.append(st)
-        return rows
-
-    twin_rows = twin_chunks(cfg)
-    few = dataclasses.replace(cfg, city=dataclasses.replace(cfg.city, districts=[
-        dataclasses.replace(d, n_sources=cfg.real.twin_few_sources) for d in cfg.city.districts]))
-    twin_few_rows = twin_chunks(few)
-    by_group = {}
-    for grp in sorted({r["group"] for r in real_rows}):
-        by_group[grp] = _summ([r for r in real_rows if r["group"] == grp])
-    return {"chunk_len_s": L * cfg.real.bin_s, "min_stream_s": cfg.real.hurst_min_stream_s,
-            "real": _summ(real_rows), "real_by_group": by_group, "twin": _summ(twin_rows),
-            "twin_few_sources": {"sources_per_cell": cfg.real.twin_few_sources, **_summ(twin_few_rows)},
-            "iid_reference_H": float(hurst_aggvar(np.random.default_rng(cfg.seed).normal(size=L * 8) + 5.0,
+            st["group"] = g["group"][0]
+            rows.append(st)
+    by_group = {grp: _summ([r for r in rows if r["group"] == grp]) for grp in sorted({r["group"] for r in rows})}
+    return {"min_stream_s": cfg.real.hurst_min_stream_s, "all": _summ(rows), "by_group": by_group,
+            "iid_reference_H": float(hurst_aggvar(np.random.default_rng(cfg.seed).normal(size=min_len * 4) + 5.0,
                                                   cfg.real.hurst_min_scale_s, cfg.real.hurst_max_scale_div))}

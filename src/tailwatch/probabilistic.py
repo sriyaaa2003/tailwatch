@@ -74,7 +74,7 @@ def run(df: pl.DataFrame, cfg: Config) -> dict:
         }
     out["median_mae"] = float(np.abs(P["med"] - P["y"]).mean())
     out["median_mae_persistence_baseline"] = float(np.abs(
-        df["util_now"].to_numpy()[P["rows"]] - P["y"]).mean())
+        df["level_now"].to_numpy()[P["rows"]] - P["y"]).mean())
     out["plot"] = {"y": P["y"][::40].tolist(), "lo": P["lo_c"][::40].tolist(), "hi": P["hi_c"][::40].tolist(),
                    "med": P["med"][::40].tolist()}
     return out

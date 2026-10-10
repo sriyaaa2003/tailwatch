@@ -1,4 +1,4 @@
-## Data (msData real trace, Open RAN 5G testbed)
+## Data (msData, Open RAN 5G testbed)
 
 3,175,140 per-UE records (median spacing 97 ms, 5th-95th percentile 44-295 ms; not 1 ms samples) -> cell-level load in 1 s bins (sum of all UEs' downlink rate), 702 contiguous streams (silences over 3 s split a stream, streams under 120 s dropped), 44.6 h of cell time, 65,944 decision points. **High-load burst** = cell load reaches 10 Mbit/s within 10 s (a configured level, about the 99.3rd percentile of 1 s load; the cell's capacity is not observed, so this is not verified congestion). **Burst rate 4.0%** (2,627 events).
 
@@ -24,17 +24,18 @@ Descriptive only (the traffic label is never a model input): burst rate by the t
 | slowloris-C | 3,851 | 4.6% |
 | none | 166 | 4.8% |
 
-### Is the twin's traffic shaped like the real trace?
+### Burstiness of the cell load
 
-Same estimator and series length for all rows (412 s; real streams of at least 300 s). Median [IQR]; iid-noise Hurst reference 0.53.
+Streams of at least 300 s. Median [IQR]; iid-noise Hurst reference 0.57.
 
-| series | n | Hurst H | CV (std/mean) | autocorr lag 1 s | autocorr lag 10 s |
+| streams | n | Hurst H | CV (std/mean) | autocorr lag 1 s | autocorr lag 10 s |
 |---|---|---|---|---|---|
-| real trace | 119 | 0.88 [0.83, 0.93] | 0.95 [0.77, 1.16] | 0.53 [0.42, 0.60] | 0.38 [0.27, 0.52] |
-| twin as published (45-70 sources/cell) | 1632 | 0.74 [0.67, 0.80] | 0.32 [0.27, 0.37] | 0.76 [0.73, 0.79] | 0.19 [0.12, 0.27] |
-| twin with 4 sources/cell | 1632 | 0.72 [0.63, 0.80] | 1.14 [0.94, 1.38] | 0.75 [0.71, 0.80] | 0.18 [0.09, 0.28] |
-
-Real Hurst by mobility pattern (median, n streams): bus 0.84 (n=9), car 0.89 (n=41), pedestrian 0.89 (n=59), static 0.82 (n=4), train 0.87 (n=6).
+| all | 119 | 0.88 [0.83, 0.93] | 0.95 [0.77, 1.16] | 0.53 [0.42, 0.60] | 0.38 [0.27, 0.52] |
+| bus | 9 | 0.84 [0.72, 0.87] | 0.84 [0.67, 0.90] | 0.26 [0.23, 0.52] | 0.34 [0.27, 0.55] |
+| car | 41 | 0.89 [0.83, 0.93] | 0.96 [0.84, 1.18] | 0.55 [0.45, 0.65] | 0.38 [0.29, 0.52] |
+| pedestrian | 59 | 0.89 [0.85, 0.94] | 1.01 [0.79, 1.25] | 0.54 [0.45, 0.61] | 0.36 [0.23, 0.47] |
+| static | 4 | 0.82 [0.77, 0.87] | 0.75 [0.68, 0.83] | 0.29 [0.24, 0.38] | 0.47 [0.44, 0.52] |
+| train | 6 | 0.87 [0.86, 0.88] | 0.72 [0.65, 0.74] | 0.37 [0.31, 0.48] | 0.57 [0.47, 0.63] |
 
 ## 1. Imbalance strategies (unseen mobility patterns, raw scores)
 

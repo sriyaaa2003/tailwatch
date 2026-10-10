@@ -21,49 +21,6 @@ class Paths:
 
 
 @dataclass(frozen=True)
-class District:
-    name: str
-    col_start: int
-    col_end: int
-    n_sources: int
-    rate_mean_mbps: float
-    rate_sigma: float
-    on_alpha: float
-    off_alpha: float
-    target_mean_util: float
-
-
-@dataclass(frozen=True)
-class City:
-    grid_rows: int
-    grid_cols: int
-    districts: list[District]
-
-
-@dataclass(frozen=True)
-class Event:
-    district: str
-    start_s: int
-    duration_s: int
-    ramp_s: int
-    extra_source_factor: float
-
-
-@dataclass(frozen=True)
-class Sim:
-    duration_s: int
-    on_min_s: float
-    off_min_s: float
-    capacity_jitter_sigma: float
-    diurnal_amplitude: float
-    diurnal_period_s: int
-    rsrp_base_dbm: float
-    rsrp_util_slope_db: float
-    rsrp_noise_db: float
-    events: list[Event]
-
-
-@dataclass(frozen=True)
 class Storm:
     utilisation_threshold: float
     horizon_s: int
@@ -126,49 +83,22 @@ class Generalization:
 
 
 @dataclass(frozen=True)
-class Hurst:
-    validate_cells: int
-    min_scale_s: int
-    max_scale_div: int
-
-
-@dataclass(frozen=True)
-class Scale:
-    multipliers: list[int]
-    base_cells: int
-    base_duration_s: int
-    window_s: int
-    engines: list[str]
-    timeout_s: int
-    repeats: int
-
-
-@dataclass(frozen=True)
-class Radar:
-    strategy: str
-    variant: str
-    lead_s: int
-    window_s: int
-    event_index: int
-
-
-@dataclass(frozen=True)
 class Report:
     group_label: str              # what a held-out group is called in tables and plots
-    kind: str                     # "twin" | "real": selects the data section of the report
-    event_label: str              # what the rare event is called ("storm" on the twin, "burst" on the real trace)
+    kind: str                     # "msdata" | "fiveg": selects the data section of the report
+    event_label: str              # what the rare event is called
     peak_label: str               # what the regression target is called in tables
 
 
 @dataclass(frozen=True)
 class Real:
-    """Real-trace study (msData, Open RAN 5G testbed). Nothing here applies to the digital twin."""
+    """msData (Open RAN 5G testbed). Nothing here applies to the client-side 5G study."""
     url: str
     expected_bytes: int
     filename: str
     results_dir: str
     data_dir: str
-    group_col: str                # column that plays the role of "district" (held out as a whole)
+    group_col: str                # column that is held out as a whole group
     timestamp_ticks_per_s: float  # timestamp unit; inferred from epoch magnitude, see README
     bin_s: float
     max_gap_s: float              # a longer silence in the cell's record stream starts a new stream
@@ -180,56 +110,37 @@ class Real:
     stride_s: int
     n_boot: int
     block_s: int
-    hurst_min_stream_s: int       # only streams at least this long enter the Hurst comparison
+    hurst_min_stream_s: int       # only streams at least this long enter the Hurst estimate
     hurst_min_scale_s: int
     hurst_max_scale_div: int
-    twin_few_sources: int         # sources per cell for the "testbed-sized" twin variant (the testbed has <= 4 UEs)
     storm_tail_labels: list[str]  # traffic labels listed in the descriptive "who is present at a burst" table
 
 
 @dataclass(frozen=True)
-class Outage:
-    """Cell-outage impact study on the digital twin (known ground truth). Nothing here applies to the real trace."""
-    n_worlds: int                 # independent simulated cities (different seeds)
-    dev_worlds: int               # the first dev_worlds worlds are for choosing the method; results are reported on the rest
-    world_seed_stride: int
-    scenarios_per_world: int
-    use_surge_events: bool        # scripted surges stay in the world: a realistic confounder for the estimator
-    pair_fraction: float          # share of scenarios that take down two adjacent cells (site-level fault)
-    no_coverage_fraction: float   # share of scenarios where nobody can reconnect (no neighbouring coverage)
-    reconnect_prob_min: float     # per-scenario share of affected users that find a neighbouring cell
-    reconnect_prob_max: float
-    start_min_s: int              # earliest outage start (the estimator needs a pre-period)
-    end_margin_s: int             # an outage ends at least this long before the series does
-    duration_min_s: int
-    duration_max_s: int
-    reconnect_delay_min_s: int    # users are without service this long before they reselect a neighbour
-    reconnect_delay_max_s: int
-    return_delay_max_s: int       # users re-attach to the repaired cell up to this late
-    routing_concentration: float  # Dirichlet concentration of the true neighbour-reselection weights
-    handover_noise_sigma: float   # log-normal noise between true reselection weights and the handover statistics
-    alarm_start_delay_max_s: int  # monitoring raises the alarm up to this late
-    alarm_clear_delay_max_s: int
-    degraded_served_fraction: float  # a second is degraded when served fraction (capacity / load) is below this
-    absorber_min_share: float     # a neighbour is a "material absorber" when it takes at least this share of rerouted traffic
-    pre_window_s: int
-    guard_s: int                  # seconds before the alarm left out of the pre-period (alarm delay contamination)
-    control_min_hops: int         # control cells are at least this many hops from every failed cell
-    control_smooth_s: int
-    level_block_s: int            # pre-period level = median of block means of this length (robust to a surge in the pre-period)
-    alpha: float                  # significance level of the placebo-in-space absorber test
-    prior_weights: list[float]    # weight on the handover prior when allocating traffic (0 = data only, 1 = prior only)
-    noise_sweep: list[float]      # handover_noise_sigma values for the sensitivity table
+class FiveG:
+    """Client-side 5G production traces (Raca et al., MMSys 2020): 1 Hz KPIs logged on a phone in a car or on a desk."""
+    url: str
+    expected_bytes: int
+    filename: str
+    data_dir: str
+    results_dir: str
+    max_gap_s: int                # a longer jump in the timestamps splits a session into two streams
+    min_stream_s: int
+    cqi_now_min: int              # decision points are rows whose channel is currently at least this good
+    cqi_event_max: int            # event: the worst CQI in the next horizon_s seconds is at most this
+    horizon_s: int
+    windows_s: list[int]
+    stride_s: int
     n_boot: int
-    example_seed_index: int       # which scenario is drawn in the example figure
+    block_s: int
+    dl_kbps_per_mbps: float       # DL_bitrate is logged in kbit/s
 
 
 @dataclass(frozen=True)
 class Config:
     seed: int
+    duration_s: int               # length of the time axis of the data set in use; set by the data set's derive step
     paths: Paths
-    city: City
-    sim: Sim
     storm: Storm
     features: Features
     model: Model
@@ -238,12 +149,9 @@ class Config:
     selection: Selection
     policy: Policy
     generalization: Generalization
-    hurst: Hurst
-    scale: Scale
-    radar: Radar
     report: Report
     real: Real
-    outage: Outage
+    fiveg: FiveG
 
 
 def _build(tp: typing.Any, data: typing.Any, path: str) -> typing.Any:
@@ -280,28 +188,6 @@ def _build(tp: typing.Any, data: typing.Any, path: str) -> typing.Any:
 
 
 def validate(cfg: Config) -> None:
-    names = [d.name for d in cfg.city.districts]
-    if len(set(names)) != len(names):
-        raise ConfigError("city.districts: duplicate names")
-    covered = set()
-    for d in cfg.city.districts:
-        if not (0 <= d.col_start < d.col_end <= cfg.city.grid_cols):
-            raise ConfigError(f"district {d.name}: bad column range")
-        cols = set(range(d.col_start, d.col_end))
-        if covered & cols:
-            raise ConfigError(f"district {d.name}: overlaps another district")
-        covered |= cols
-        if d.on_alpha <= 1 or d.off_alpha <= 1:
-            raise ConfigError(f"district {d.name}: Pareto shapes must be > 1 (finite mean)")
-        if not 0 < d.target_mean_util < 1:
-            raise ConfigError(f"district {d.name}: target_mean_util must be in (0,1)")
-    if covered != set(range(cfg.city.grid_cols)):
-        raise ConfigError("city.districts must cover every grid column")
-    for e in cfg.sim.events:
-        if e.district not in names:
-            raise ConfigError(f"event references unknown district {e.district!r}")
-        if e.start_s + e.duration_s > cfg.sim.duration_s:
-            raise ConfigError("event extends beyond sim.duration_s")
     if not 0 < cfg.storm.utilisation_threshold <= 1.5:
         raise ConfigError("storm.utilisation_threshold out of range")
     if cfg.model.default_strategy not in cfg.model.strategies:
@@ -320,24 +206,14 @@ def validate(cfg: Config) -> None:
     bad = set(cfg.generalization.protocols) - {"random", "temporal", "unseen", "unseen_future"}
     if bad:
         raise ConfigError(f"unknown generalization protocols {sorted(bad)}")
-    if cfg.report.kind not in {"twin", "real"}:
-        raise ConfigError("report.kind must be twin|real")
+    if cfg.report.kind not in {"msdata", "fiveg"}:
+        raise ConfigError("report.kind must be msdata|fiveg")
     r = cfg.real
     if r.bin_s <= 0 or r.max_gap_s < r.bin_s or r.min_stream_s < 2 * r.horizon_s or r.storm_mbps <= 0:
         raise ConfigError("real: inconsistent bin/gap/stream/horizon/storm settings")
-    o = cfg.outage
-    if o.n_worlds <= o.dev_worlds or o.dev_worlds < 0 or o.scenarios_per_world < 1:
-        raise ConfigError("outage: need n_worlds > dev_worlds >= 0 and at least one scenario per world")
-    if not (0 <= o.reconnect_prob_min <= o.reconnect_prob_max <= 1):
-        raise ConfigError("outage: reconnect probabilities must satisfy 0 <= min <= max <= 1")
-    if o.start_min_s < o.pre_window_s + o.guard_s + o.alarm_start_delay_max_s:
-        raise ConfigError("outage.start_min_s must leave room for guard + pre_window")
-    if o.start_min_s + o.duration_max_s + o.end_margin_s > cfg.sim.duration_s:
-        raise ConfigError("outage: start_min_s + duration_max_s + end_margin_s exceeds sim.duration_s")
-    if not (0 < o.alpha < 0.5) or not all(0 <= w <= 1 for w in o.prior_weights):
-        raise ConfigError("outage: alpha must be in (0,0.5) and prior_weights in [0,1]")
-    if cfg.radar.variant not in {"raw", "sigmoid", "isotonic"}:
-        raise ConfigError("radar.variant must be raw|sigmoid|isotonic")
+    f = cfg.fiveg
+    if f.min_stream_s < 2 * f.horizon_s or not 0 <= f.cqi_event_max < f.cqi_now_min <= 15:
+        raise ConfigError("fiveg: need min_stream_s >= 2 x horizon_s and 0 <= cqi_event_max < cqi_now_min <= 15")
 
 
 def load_config(path: str | os.PathLike[str] | None = None) -> Config:

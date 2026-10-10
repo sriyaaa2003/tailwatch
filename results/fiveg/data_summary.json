@@ -1,0 +1,56 @@
+{
+  "streams": 87,
+  "stream_seconds": 200219,
+  "feature_rows": 75593,
+  "storm_rate": 0.037675446139192784,
+  "storm_count": 2848,
+  "cqi_now_min": 9,
+  "cqi_event_max": 5,
+  "horizon_s": 10,
+  "share_cqi_le_event": 0.06431457553978394,
+  "share_5g": 0.7280860790767444,
+  "by_group": [
+    {
+      "group": "static / prime",
+      "rows": 17846,
+      "storm_rate": 0.009133699428443349,
+      "streams": 8,
+      "seconds": 37823
+    },
+    {
+      "group": "static / download",
+      "rows": 7125,
+      "storm_rate": 0.021614035087719297,
+      "streams": 5,
+      "seconds": 17217
+    },
+    {
+      "group": "driving / netflix",
+      "rows": 14693,
+      "storm_rate": 0.05172531137276254,
+      "streams": 23,
+      "seconds": 39280
+    },
+    {
+      "group": "driving / download",
+      "rows": 9105,
+      "storm_rate": 0.0772103239978034,
+      "streams": 18,
+      "seconds": 28147
+    },
+    {
+      "group": "driving / prime",
+      "rows": 12347,
+      "storm_rate": 0.05936664776868875,
+      "streams": 22,
+      "seconds": 40456
+    },
+    {
+      "group": "static / netflix",
+      "rows": 14477,
+      "storm_rate": 0.02314015334668785,
+      "streams": 11,
+      "seconds": 37296
+    }
+  ]
+}

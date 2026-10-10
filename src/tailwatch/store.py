@@ -34,7 +34,7 @@ def write_parquet(df: pl.DataFrame, path: Path) -> int:
 def read_features(cfg: Config) -> pl.DataFrame:
     path = data_dir(cfg) / "features.parquet"
     if not path.exists():
-        raise FileNotFoundError(f"{path} missing: run `tailwatch simulate` first")
+        raise FileNotFoundError(f"{path} missing: run the data set's prepare step first")
     return pl.read_parquet(path)
 
 

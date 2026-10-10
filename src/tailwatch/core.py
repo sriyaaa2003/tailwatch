@@ -28,7 +28,7 @@ class Fold:
     test: np.ndarray
 
 
-META_COLS = {"cell_id", "t", "group", "row", "col", "top_label", "y_fut_max", "y"}
+META_COLS = {"cell_id", "t", "group", "row", "col", "top_label", "y_fut_max", "y", "level_now"}
 
 
 def feature_cols(df: pl.DataFrame) -> list[str]:
@@ -37,7 +37,7 @@ def feature_cols(df: pl.DataFrame) -> list[str]:
 
 
 def lodo_folds(df: pl.DataFrame, cfg: Config) -> list[Fold]:
-    """Leave-one-group-out (a group is a district of the twin, or a mobility pattern of the real trace).
+    """Leave-one-group-out (a group is a mobility pattern or an app/mobility combination).
 
     Inside the training groups the validation set (threshold + calibration) is either the last `val_fraction` of time,
     separated from training by a purge gap so window overlap cannot leak (val_mode "time"), or every k-th stream,
@@ -46,7 +46,7 @@ def lodo_folds(df: pl.DataFrame, cfg: Config) -> list[Fold]:
     grp = df["group"].to_numpy()
     folds = []
     if cfg.model.val_mode == "time":
-        t_split = cfg.sim.duration_s * (1.0 - cfg.model.val_fraction)
+        t_split = cfg.duration_s * (1.0 - cfg.model.val_fraction)
     else:
         k = max(2, round(1.0 / cfg.model.val_fraction))
         in_val = df["cell_id"].to_numpy() % k == 0

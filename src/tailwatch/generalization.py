@@ -23,7 +23,7 @@ def _fit_eval(df: pl.DataFrame, cfg: Config, tr: np.ndarray, va: np.ndarray, te:
 def run(df: pl.DataFrame, oof: pl.DataFrame, meta: dict, cfg: Config) -> list[dict]:
     n = df.height
     t = df["t"].to_numpy()
-    T = cfg.sim.duration_s
+    T = cfg.duration_s
     label = cfg.report.group_label
     wanted = cfg.generalization.protocols
     rows = []

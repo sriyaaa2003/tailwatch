@@ -104,9 +104,10 @@ def test_stream_validation_folds_hold_out_whole_groups_and_never_mix_streams(cfg
         assert not np.any(f.train & f.val)
 
 
-def test_derive_config_swaps_in_real_settings_without_touching_the_twin(cfg):
+def test_derive_config_swaps_in_msdata_settings_without_touching_the_base_config(cfg):
     d = derive_config(cfg)
     assert d.paths.results_dir == cfg.real.results_dir and cfg.paths.results_dir != d.paths.results_dir
-    assert d.model.val_mode == "stream" and cfg.model.val_mode == "time"
+    assert d.model.val_mode == "stream" and d.model.purge_s == 0
     assert d.storm.horizon_s == cfg.real.horizon_s and cfg.storm.horizon_s != cfg.real.horizon_s
-    assert d.report.kind == "real" and cfg.report.kind == "twin"
+    assert d.report.kind == "msdata" and cfg.report.kind == "msdata"
+    assert d.generalization.protocols == ["random", "unseen"]
